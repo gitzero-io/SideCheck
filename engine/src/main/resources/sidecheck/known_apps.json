@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "_comment": "Official package names for well-known apps. signingCertSha256 is intentionally EMPTY: fill it ONLY with verified values (see TODO in ImpersonationCheck.kt). Never guess a hash.",
+  "apps": [
+    { "brand": "Netflix", "aliases": ["Netflix"], "officialPackages": ["com.netflix.ninja", "com.netflix.mediaclient"], "signingCertSha256": [] },
+    { "brand": "YouTube", "aliases": ["YouTube", "YouTube for Android TV", "YouTube for TV"], "officialPackages": ["com.google.android.youtube.tv", "com.google.android.youtube"], "signingCertSha256": [] },
+    { "brand": "YouTube Kids", "aliases": ["YouTube Kids"], "officialPackages": ["com.google.android.youtube.tvkids", "com.google.android.apps.youtube.kids"], "signingCertSha256": [] },
+    { "brand": "Disney+", "aliases": ["Disney+", "Disney Plus"], "officialPackages": ["com.disney.disneyplus"], "signingCertSha256": [] },
+    { "brand": "Prime Video", "aliases": ["Prime Video", "Amazon Prime Video"], "officialPackages": ["com.amazon.amazonvideo.livingroom", "com.amazon.avod.thirdpartyclient"], "signingCertSha256": [] },
+    { "brand": "Hulu", "aliases": ["Hulu"], "officialPackages": ["com.hulu.livingroomplus", "com.hulu.plus"], "signingCertSha256": [] },
+    { "brand": "Spotify", "aliases": ["Spotify"], "officialPackages": ["com.spotify.tv.android", "com.spotify.music"], "signingCertSha256": [] },
+    { "brand": "Plex", "aliases": ["Plex"], "officialPackages": ["com.plexapp.android"], "signingCertSha256": [] },
+    { "brand": "Kodi", "aliases": ["Kodi"], "officialPackages": ["org.xbmc.kodi"], "signingCertSha256": [] },
+    { "brand": "VLC", "aliases": ["VLC", "VLC for Android"], "officialPackages": ["org.videolan.vlc"], "signingCertSha256": [] },
+    { "brand": "Pluto TV", "aliases": ["Pluto TV"], "officialPackages": ["tv.pluto.android"], "signingCertSha256": [] },
+    { "brand": "Tubi", "aliases": ["Tubi", "Tubi TV"], "officialPackages": ["com.tubitv"], "signingCertSha256": [] },
+    { "brand": "Paramount+", "aliases": ["Paramount+", "Paramount Plus"], "officialPackages": ["com.cbs.ott", "com.cbs.app"], "signingCertSha256": [] },
+    { "brand": "Peacock", "aliases": ["Peacock", "Peacock TV"], "officialPackages": ["com.peacocktv.peacockandroid"], "signingCertSha256": [] },
+    { "brand": "Sling TV", "aliases": ["Sling TV", "Sling"], "officialPackages": ["com.sling"], "signingCertSha256": [] },
+    { "brand": "Apple TV", "aliases": ["Apple TV", "Apple TV+"], "officialPackages": ["com.apple.atve.androidtv.appletv"], "signingCertSha256": [] },
+    { "brand": "Crunchyroll", "aliases": ["Crunchyroll"], "officialPackages": ["com.crunchyroll.crunchyroid"], "signingCertSha256": [] },
+    { "brand": "Stremio", "aliases": ["Stremio"], "officialPackages": ["com.stremio.one"], "signingCertSha256": [] },
+    { "brand": "MX Player", "aliases": ["MX Player", "MX Player Pro"], "officialPackages": ["com.mxtech.videoplayer.ad", "com.mxtech.videoplayer.pro"], "signingCertSha256": [] },
+    { "brand": "Downloader", "aliases": ["Downloader", "Downloader by AFTVnews"], "officialPackages": ["com.esaba.downloader"], "signingCertSha256": [] },
+    { "brand": "Google Play Store", "aliases": ["Google Play Store", "Play Store", "Google Play"], "officialPackages": ["com.android.vending"], "signingCertSha256": [] },
+    { "brand": "Google Play services", "aliases": ["Google Play services", "Google Play Services"], "officialPackages": ["com.google.android.gms"], "signingCertSha256": [] },
+    { "brand": "Chrome", "aliases": ["Chrome", "Google Chrome"], "officialPackages": ["com.android.chrome"], "signingCertSha256": [] },
+    { "brand": "WhatsApp", "aliases": ["WhatsApp"], "officialPackages": ["com.whatsapp"], "signingCertSha256": [] },
+    { "brand": "Facebook", "aliases": ["Facebook"], "officialPackages": ["com.facebook.katana"], "signingCertSha256": [] }
+  ],
+  "systemLikeLabels": [
+    "Android System", "System Update", "System Updates", "Software Update", "System Service",
+    "System Services", "Google Services", "Security Update", "Android Update", "Android Services"
+  ]
+}

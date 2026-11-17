@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: lets adb trigger a background check immediately. Not in release builds. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".debug.DebugCheckReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="com.bastionsecurity.sidecheck.debug.CHECK_NOW" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

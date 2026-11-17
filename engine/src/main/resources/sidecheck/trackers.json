@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "source": "bundled-v1 (replace with Exodus Privacy list later)",
+  "trackers": [
+    { "id": "facebook_ads", "name": "Facebook Audience Network", "categories": ["Advertisement"], "codeSignatures": ["com.facebook.ads"], "website": "https://www.facebook.com/business/marketing/audience-network" },
+    { "id": "facebook_analytics", "name": "Facebook Analytics", "categories": ["Analytics"], "codeSignatures": ["com.facebook.appevents"], "website": "https://developers.facebook.com/docs/app-events" },
+    { "id": "google_admob", "name": "Google AdMob", "categories": ["Advertisement"], "codeSignatures": ["com.google.android.gms.ads"], "website": "https://admob.google.com" },
+    { "id": "firebase_analytics", "name": "Google Firebase Analytics", "categories": ["Analytics"], "codeSignatures": ["com.google.firebase.analytics"], "website": "https://firebase.google.com/products/analytics" },
+    { "id": "appsflyer", "name": "AppsFlyer", "categories": ["Analytics", "Profiling"], "codeSignatures": ["com.appsflyer"], "website": "https://www.appsflyer.com" },
+    { "id": "adjust", "name": "Adjust", "categories": ["Analytics"], "codeSignatures": ["com.adjust.sdk"], "website": "https://www.adjust.com" },
+    { "id": "unity_ads", "name": "Unity Ads", "categories": ["Advertisement"], "codeSignatures": ["com.unity3d.ads"], "website": "https://unity.com/products/unity-ads" },
+    { "id": "applovin", "name": "AppLovin", "categories": ["Advertisement", "Analytics"], "codeSignatures": ["com.applovin"], "website": "https://www.applovin.com" },
+    { "id": "ironsource", "name": "ironSource", "categories": ["Advertisement"], "codeSignatures": ["com.ironsource"], "website": "https://www.is.com" },
+    { "id": "startapp", "name": "Start.io (StartApp)", "categories": ["Advertisement"], "codeSignatures": ["com.startapp"], "website": "https://www.start.io" },
+    { "id": "branch", "name": "Branch", "categories": ["Analytics"], "codeSignatures": ["io.branch"], "website": "https://branch.io" },
+    { "id": "mixpanel", "name": "Mixpanel", "categories": ["Analytics"], "codeSignatures": ["com.mixpanel"], "website": "https://mixpanel.com" },
+    { "id": "amplitude", "name": "Amplitude", "categories": ["Analytics"], "codeSignatures": ["com.amplitude"], "website": "https://amplitude.com" },
+    { "id": "onesignal", "name": "OneSignal", "categories": ["Analytics"], "codeSignatures": ["com.onesignal"], "website": "https://onesignal.com" },
+    { "id": "vungle", "name": "Vungle (Liftoff)", "categories": ["Advertisement"], "codeSignatures": ["com.vungle"], "website": "https://liftoff.io" },
+    { "id": "chartboost", "name": "Chartboost", "categories": ["Advertisement"], "codeSignatures": ["com.chartboost"], "website": "https://www.chartboost.com" },
+    { "id": "inmobi", "name": "InMobi", "categories": ["Advertisement"], "codeSignatures": ["com.inmobi"], "website": "https://www.inmobi.com" },
+    { "id": "mintegral", "name": "Mintegral", "categories": ["Advertisement"], "codeSignatures": ["com.mbridge"], "website": "https://www.mintegral.com" },
+    { "id": "pangle", "name": "Pangle (ByteDance)", "categories": ["Advertisement"], "codeSignatures": ["com.bytedance.sdk.openadsdk"], "website": "https://www.pangleglobal.com" }
+  ]
+}

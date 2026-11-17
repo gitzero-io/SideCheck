@@ -1,0 +1,403 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "known_malware",
+      "severity": "CRITICAL", "category": "IDENTITY", "action": "REMOVE",
+      "title": "Matches known harmful software",
+      "explanation": "{source} lists this exact file as {malwareName}.",
+      "why": "This isn't a guess based on what the app could do. Someone has already seen this exact file cause harm.",
+      "when": { "all": ["knownMalware"] }
+    },
+    {
+      "id": "accessibility_device_admin",
+      "severity": "CRITICAL", "category": "DEVICE_CONTROL", "action": "REMOVE",
+      "title": "Can watch your screen and stop you from removing it",
+      "explanation": "{app} can read and control what's on your screen, and it can also make itself a device admin.",
+      "why": "Together, these let an app take over a device: it can tap buttons for you and make itself hard to uninstall. Harmful apps use this pair a lot. Very few honest TV apps need both.",
+      "when": { "all": ["accessibility", "deviceAdmin"] },
+      "supersedes": ["accessibility_service", "device_admin", "device_admin_media_app"]
+    },
+    {
+      "id": "impersonation_debug_signed",
+      "severity": "CRITICAL", "category": "IDENTITY", "action": "REMOVE",
+      "title": "Uses the {brand} name but is a test build from someone else",
+      "explanation": "{app} calls itself {brand}, but it isn't the official {brand} app, and it's signed with a free test key instead of a real company's key.",
+      "why": "The real {brand} app is never signed with a test key. This is a copy built by someone else. It may work fine, but you can't tell what they changed.",
+      "when": { "all": ["impersonatesBrand", "debugCert"] },
+      "supersedes": ["impersonates_brand", "debug_signed"]
+    },
+    {
+      "id": "signer_mismatch",
+      "severity": "CRITICAL", "category": "IDENTITY", "action": "CONSIDER_REMOVING",
+      "title": "Looks like {brand}, but it wasn't signed by {brand}",
+      "explanation": "{app} uses the official {brand} app ID, but its digital signature doesn't belong to {brand}.",
+      "why": "Every app has a signature that only its maker can create. This one has the right name but the wrong signature, so someone else changed or rebuilt it.",
+      "when": { "all": ["signerMismatch"] }
+    },
+    {
+      "id": "accessibility_overlay_boot",
+      "severity": "HIGH", "category": "DEVICE_CONTROL", "action": "CONSIDER_REMOVING",
+      "title": "Can read your screen, draw over it, and start by itself",
+      "explanation": "{app} can read what's on your screen, show things on top of other apps, and start on its own when the TV turns on.",
+      "why": "This mix lets an app watch what you do and show fake screens over real ones, all without you opening it. Banking and password-stealing apps often use this exact combination.",
+      "when": { "all": ["accessibility", "overlay", "boot"] },
+      "supersedes": ["accessibility_service", "overlay_permission", "boot_start"]
+    },
+    {
+      "id": "accessibility_install_apps",
+      "severity": "HIGH", "category": "DEVICE_CONTROL", "action": "CONSIDER_REMOVING",
+      "title": "Can read your screen and install other apps",
+      "explanation": "{app} can read and press things on your screen, and it can also ask to install other apps.",
+      "why": "An app that can press buttons for you could approve its own install requests. That means it could add more apps without you really agreeing.",
+      "when": { "all": ["accessibility", "installPackages"] },
+      "supersedes": ["accessibility_service", "install_other_apps"]
+    },
+    {
+      "id": "device_admin_media_app",
+      "severity": "HIGH", "category": "DEVICE_CONTROL", "action": "CONSIDER_REMOVING",
+      "title": "A video or media app that asks for admin control",
+      "explanation": "{app} looks like a media app, but it can make itself a device admin.",
+      "why": "Admin control lets an app lock the screen, change security settings, or block you from removing it. A media player has no normal reason to need this.",
+      "when": { "all": ["deviceAdmin", "mediaApp"] },
+      "supersedes": ["device_admin"]
+    },
+    {
+      "id": "sms_on_tv",
+      "severity": "HIGH", "category": "PRIVACY", "action": "CONSIDER_REMOVING",
+      "title": "Asks for text message access on a TV",
+      "explanation": "{app} asks for {permissionList}.",
+      "why": "TVs don't send or receive texts. An app asking for this was probably made for phones, or it's trying to grab codes (like login codes) where it can.",
+      "when": { "anyPermission": ["android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "android.permission.SEND_SMS", "android.permission.RECEIVE_MMS", "android.permission.RECEIVE_WAP_PUSH"] }
+    },
+    {
+      "id": "call_log_on_tv",
+      "severity": "HIGH", "category": "PRIVACY", "action": "CONSIDER_REMOVING",
+      "title": "Asks for phone call access on a TV",
+      "explanation": "{app} asks for {permissionList}.",
+      "why": "TVs don't make phone calls. Asking for call access on a TV is a sign the app collects more than it needs.",
+      "when": { "anyPermission": ["android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.PROCESS_OUTGOING_CALLS", "android.permission.CALL_PHONE", "android.permission.ANSWER_PHONE_CALLS"] }
+    },
+    {
+      "id": "old_target_auto_grant",
+      "severity": "HIGH", "category": "BUILD", "action": "REVIEW",
+      "title": "Gets private permissions without asking you",
+      "explanation": "{app} was built for {androidVersion}. Because of that, Android gives it access to {permissionList} at install time, with no pop-up asking you.",
+      "why": "Newer apps must ask before using things like your files or microphone. Older-style apps skip that step. Some apps stay old on purpose to get around it.",
+      "when": { "all": ["dangerousPermissions"], "targetSdkBelow": 23 },
+      "supersedes": ["very_old_target"]
+    },
+    {
+      "id": "impersonates_brand",
+      "severity": "HIGH", "category": "IDENTITY", "action": "CONSIDER_REMOVING",
+      "title": "Uses the {brand} name but isn't the official app",
+      "explanation": "{app} calls itself {brand}, but the official {brand} app uses a different app ID ({official}).",
+      "why": "Copies of popular apps are a common way to spread harmful software. It could also be a modified version or an official version we don't know about yet. If you got it from {brand} directly, choose Keep.",
+      "when": { "all": ["impersonatesBrand"], "none": ["debugCert"] }
+    },
+    {
+      "id": "system_like_name",
+      "severity": "HIGH", "category": "IDENTITY", "action": "CONSIDER_REMOVING",
+      "title": "Calls itself \"{name}\" but isn't part of Android",
+      "explanation": "{app} uses a name that sounds like part of Android, but it was added later and isn't a built-in system app.",
+      "why": "Harmful apps often pick names like \"System Update\" so people are afraid to remove them. Real Android updates come through Settings.",
+      "when": { "all": ["systemLikeName"] }
+    },
+    {
+      "id": "packed_hidden",
+      "severity": "HIGH", "category": "CODE", "action": "CONSIDER_REMOVING",
+      "title": "Hides its code and has no icon",
+      "explanation": "{app} uses a tool that locks its code so it can't be inspected ({packers}), and it doesn't show up on your home screen even though it can run in the background.",
+      "why": "Hiding the code and hiding the app together make it very hard to know what it's doing. Honest apps rarely need both.",
+      "when": { "all": ["packed", "hiddenApp"] },
+      "supersedes": ["packed", "hidden_app"]
+    },
+    {
+      "id": "dynamic_code_cleartext",
+      "severity": "HIGH", "category": "CODE", "action": "CONSIDER_REMOVING",
+      "heuristic": true,
+      "title": "May download new code over an unprotected connection",
+      "explanation": "{app}'s code includes tools to load extra code after it's installed, and it's allowed to use unencrypted (http) connections.",
+      "why": "If an app downloads code without encryption, someone on your network could swap in their own code. Even if the app maker is honest, this is risky.",
+      "when": { "all": ["dynamicCode"], "any": ["cleartext", "cleartextUrls"] },
+      "supersedes": ["dynamic_code", "cleartext_allowed"]
+    },
+    {
+      "id": "accessibility_service",
+      "severity": "MEDIUM", "category": "DEVICE_CONTROL", "action": "REVIEW",
+      "title": "Can read and control your screen",
+      "explanation": "{app} has an accessibility service. Once you turn it on, it can read everything on your screen and press buttons for you.",
+      "why": "This feature is meant to help people with disabilities. Some tools like button remappers also need it. But it's also the most powerful access a harmful app can get. Only turn it on if you know why the app needs it.",
+      "when": { "all": ["accessibility"] }
+    },
+    {
+      "id": "device_admin",
+      "severity": "MEDIUM", "category": "DEVICE_CONTROL", "action": "REVIEW",
+      "title": "Can become a device admin",
+      "explanation": "{app} can ask to become a device admin.",
+      "why": "Device admins can lock the screen, change security settings, and make themselves harder to uninstall. This is normal for parental controls and work apps, but unusual for most others.",
+      "when": { "all": ["deviceAdmin"] }
+    },
+    {
+      "id": "contacts_on_tv",
+      "severity": "MEDIUM", "category": "PRIVACY", "action": "REVIEW",
+      "title": "Asks for your contacts",
+      "explanation": "{app} asks for {permissionList}.",
+      "why": "Most TV apps don't need your contacts. If this is a video calling app, it may make sense. Otherwise it's collecting more than it needs.",
+      "when": { "anyPermission": ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS"] }
+    },
+    {
+      "id": "notification_listener",
+      "severity": "MEDIUM", "category": "PRIVACY", "action": "REVIEW",
+      "title": "Can read your notifications",
+      "explanation": "{app} can read every notification that shows up on this device, once you allow it.",
+      "why": "Notifications can include messages, codes, and account alerts. Only allow this for apps that really need it.",
+      "when": { "all": ["notificationListener"] }
+    },
+    {
+      "id": "vpn_unexpected",
+      "severity": "MEDIUM", "category": "NETWORK", "action": "REVIEW",
+      "title": "Can route all your internet traffic",
+      "explanation": "{app} includes a VPN service, but it doesn't look like a VPN app.",
+      "why": "A VPN app sees all your internet traffic. That's fine for a VPN you chose, but surprising for other apps. Some ad blockers also work this way.",
+      "when": { "all": ["vpn"], "none": ["vpnApp"] }
+    },
+    {
+      "id": "location_background",
+      "severity": "MEDIUM", "category": "PRIVACY", "action": "REVIEW",
+      "title": "Can see your location even when closed",
+      "explanation": "{app} asks to know where you are even when you're not using it.",
+      "why": "A TV doesn't move, but its location still shows where you live. Few TV apps need this in the background.",
+      "when": { "anyPermission": ["android.permission.ACCESS_BACKGROUND_LOCATION"] }
+    },
+    {
+      "id": "very_old_target",
+      "severity": "MEDIUM", "category": "BUILD", "action": "REVIEW",
+      "title": "Built for a very old version of Android",
+      "explanation": "{app} was built for {androidVersion}. That version came out years ago.",
+      "why": "Apps built for old Android skip many newer safety rules. Some old apps just haven't been updated. Others stay old on purpose to avoid those rules.",
+      "when": { "targetSdkBelow": 23 }
+    },
+    {
+      "id": "packed",
+      "severity": "MEDIUM", "category": "CODE", "action": "REVIEW",
+      "title": "Its code is locked so it can't be checked",
+      "explanation": "{app} uses a protection tool ({packers}) that hides its real code.",
+      "why": "Some companies use these tools to stop copying. But they also stop anyone, including us, from seeing what the app really does. Harmful apps use them for that reason.",
+      "when": { "all": ["packed"] }
+    },
+    {
+      "id": "hidden_app",
+      "severity": "MEDIUM", "category": "CODE", "action": "REVIEW",
+      "title": "Runs in the background but has no icon",
+      "explanation": "{app} doesn't appear on your home screen, but it can run in the background or start by itself.",
+      "why": "Apps without an icon are easy to forget about. Some are harmless helpers for other apps. Others hide on purpose so you won't remove them.",
+      "when": { "all": ["hiddenApp"] }
+    },
+    {
+      "id": "path_loader_download",
+      "severity": "MEDIUM", "category": "CODE", "action": "REVIEW",
+      "heuristic": true,
+      "title": "May download and run extra code",
+      "explanation": "{app}'s code has signs that it saves code files from the internet and then runs them.",
+      "why": "Code downloaded after install was never checked by us or by any store. It can change what the app does at any time.",
+      "when": { "all": ["pathLoaderDownload"], "none": ["dynamicCode"] }
+    },
+    {
+      "id": "overlay_permission",
+      "severity": "LOW", "category": "DEVICE_CONTROL", "action": "REVIEW",
+      "title": "Can show things on top of other apps",
+      "explanation": "{app} can draw windows over other apps once you allow it.",
+      "why": "This is used for things like floating players and chat bubbles. It can also be used to show fake screens, so only allow it if you see why.",
+      "when": { "all": ["overlay"] }
+    },
+    {
+      "id": "install_other_apps",
+      "severity": "INFO", "category": "DEVICE_CONTROL", "action": "NONE",
+      "title": "Can install updates or other apps",
+      "explanation": "{app} can ask to install apps. Apps from outside an app store often use this to install their own updates.",
+      "why": "This is normal for apps you get outside an app store, and for download and file manager apps. Android still asks you before each install, unless you've turned that off for this app.",
+      "when": { "all": ["installPackages"] }
+    },
+    {
+      "id": "microphone",
+      "severity": "LOW", "category": "PRIVACY", "action": "NONE",
+      "title": "Can use the microphone",
+      "explanation": "{app} can ask to use a microphone.",
+      "why": "Voice search needs this. Android asks you before the app can listen, unless the app was built for very old Android.",
+      "when": { "anyPermission": ["android.permission.RECORD_AUDIO"] }
+    },
+    {
+      "id": "camera",
+      "severity": "LOW", "category": "PRIVACY", "action": "NONE",
+      "title": "Can use a camera",
+      "explanation": "{app} can ask to use a camera, if one is connected.",
+      "why": "Video calling apps need this. Other TV apps usually don't.",
+      "when": { "anyPermission": ["android.permission.CAMERA"] }
+    },
+    {
+      "id": "location_precise",
+      "severity": "LOW", "category": "PRIVACY", "action": "NONE",
+      "title": "Can ask for your exact location",
+      "explanation": "{app} can ask where you are.",
+      "why": "Weather and local news apps use this. On a TV, your location is your home address.",
+      "when": { "anyPermission": ["android.permission.ACCESS_FINE_LOCATION"] }
+    },
+    {
+      "id": "accounts_list",
+      "severity": "LOW", "category": "PRIVACY", "action": "NONE",
+      "title": "Can see which accounts are on this device",
+      "explanation": "{app} can ask to see the accounts signed in on this device.",
+      "why": "This can show your email address. Most apps use their own sign-in instead.",
+      "when": { "anyPermission": ["android.permission.GET_ACCOUNTS"] }
+    },
+    {
+      "id": "change_system_settings",
+      "severity": "LOW", "category": "DEVICE_CONTROL", "action": "NONE",
+      "title": "Can change system settings",
+      "explanation": "{app} can ask to change settings like screen brightness or sound.",
+      "why": "Usually harmless, but it's more access than most apps need.",
+      "when": { "anyPermission": ["android.permission.WRITE_SETTINGS"] }
+    },
+    {
+      "id": "app_usage_access",
+      "severity": "LOW", "category": "PRIVACY", "action": "NONE",
+      "title": "Can see which apps you use",
+      "explanation": "{app} can ask to see when and how long you use other apps.",
+      "why": "Launchers and screen-time tools use this. For others, it's a record of your habits.",
+      "when": { "anyPermission": ["android.permission.PACKAGE_USAGE_STATS"] }
+    },
+    {
+      "id": "debug_signed",
+      "severity": "LOW", "category": "IDENTITY", "action": "NONE",
+      "title": "Signed with a test key",
+      "explanation": "{app} is signed with the free test key that Android tools make automatically.",
+      "why": "Real releases are signed with a key that proves who made them. A test key doesn't prove anything about who built this. Many hobby apps and mods are made this way, so it isn't bad on its own.",
+      "when": { "all": ["debugCert"], "none": ["impersonatesBrand"] }
+    },
+    {
+      "id": "debuggable",
+      "severity": "LOW", "category": "BUILD", "action": "NONE",
+      "title": "Built in test mode",
+      "explanation": "{app} was built with testing turned on.",
+      "why": "Test builds let anyone with a computer connected to the TV look inside the app and its saved data. It's a sign the app wasn't prepared for normal release.",
+      "when": { "all": ["debuggable"] }
+    },
+    {
+      "id": "cleartext_allowed",
+      "severity": "LOW", "category": "NETWORK", "action": "NONE",
+      "title": "Can send data without encryption",
+      "explanation": "{app} is allowed to use plain http connections, which aren't encrypted.",
+      "why": "Others on your network could see or change that data. Many streaming apps still use http for video, so this is common.",
+      "when": { "all": ["cleartext"] }
+    },
+    {
+      "id": "old_target",
+      "severity": "LOW", "category": "BUILD", "action": "NONE",
+      "title": "Built for an older version of Android",
+      "explanation": "{app} was built for {androidVersion}.",
+      "why": "Older apps miss some newer privacy protections. Often it just means the app isn't updated much.",
+      "when": { "targetSdkAtLeast": 23, "targetSdkBelow": 26 }
+    },
+    {
+      "id": "dynamic_code",
+      "severity": "LOW", "category": "CODE", "action": "NONE",
+      "heuristic": true,
+      "title": "Can load extra code after install",
+      "explanation": "{app}'s code includes tools for loading more code while it runs.",
+      "why": "Lots of normal apps and libraries do this for updates or plug-ins. It means what the app does can change after you install it.",
+      "when": { "all": ["dynamicCode"] }
+    },
+    {
+      "id": "runtime_exec",
+      "severity": "LOW", "category": "CODE", "action": "NONE",
+      "heuristic": true,
+      "title": "Can run system commands",
+      "explanation": "{app}'s code can run command-line programs on the device.",
+      "why": "Many apps use this for simple things like checking device info. It can also be used to change the system, especially on rooted devices.",
+      "when": { "all": ["runtimeExec"] }
+    },
+    {
+      "id": "reflection_heavy",
+      "severity": "LOW", "category": "CODE", "action": "NONE",
+      "heuristic": true,
+      "title": "Reaches into hidden parts of Android",
+      "explanation": "{app}'s code looks up internal Android parts by name and changes how it loads itself.",
+      "why": "Code protection tools and app hacks do this. Normal apps rarely need it.",
+      "when": { "all": ["reflectionHeavy"] }
+    },
+    {
+      "id": "hardcoded_ips",
+      "severity": "LOW", "category": "NETWORK", "action": "NONE",
+      "heuristic": true,
+      "title": "Connects to fixed internet addresses",
+      "explanation": "{app}'s code contains {ipCount} raw internet address(es), like {ips}, instead of normal website names.",
+      "why": "Most apps use website names. Fixed number addresses are harder to trace and are sometimes used by servers that control harmful apps. They can also just be a private streaming server.",
+      "when": { "all": ["publicIps"] }
+    },
+    {
+      "id": "trackers_many",
+      "severity": "LOW", "category": "TRACKING", "action": "NONE",
+      "title": "Contains {trackerCount} ad or tracking tools",
+      "explanation": "We found code from {trackers}.",
+      "why": "These tools collect information about how you use the app and share it with ad and data companies. Free apps often pay for themselves this way.",
+      "when": { "all": ["trackersMany"] }
+    },
+    {
+      "id": "trackers_some",
+      "severity": "INFO", "category": "TRACKING", "action": "NONE",
+      "title": "Contains ad or tracking tools",
+      "explanation": "We found code from {trackers}.",
+      "why": "These tools collect information about how you use the app. Having a few is very common.",
+      "when": { "all": ["trackersSome"] }
+    },
+    {
+      "id": "vpn_expected",
+      "severity": "INFO", "category": "NETWORK", "action": "NONE",
+      "title": "Works as a VPN",
+      "explanation": "{app} is a VPN. When it's on, your internet traffic goes through it.",
+      "why": "That's how VPNs work. Only use a VPN from a company you trust, because it can see your traffic.",
+      "when": { "all": ["vpn", "vpnApp"] }
+    },
+    {
+      "id": "boot_start",
+      "severity": "INFO", "category": "DEVICE_CONTROL", "action": "NONE",
+      "title": "Starts when your TV turns on",
+      "explanation": "{app} can start itself when the device boots.",
+      "why": "Launchers, alarm apps, and background tools need this. It also means the app runs even if you never open it.",
+      "when": { "all": ["boot"] }
+    },
+    {
+      "id": "sees_all_apps",
+      "severity": "INFO", "category": "PRIVACY", "action": "NONE",
+      "title": "Can see all your installed apps",
+      "explanation": "{app} can see the full list of apps on this device.",
+      "why": "Launchers and app managers need this (SideCheck does too). For other apps, your app list says a lot about you.",
+      "when": { "anyPermission": ["android.permission.QUERY_ALL_PACKAGES"] }
+    },
+    {
+      "id": "exported_unprotected",
+      "severity": "INFO", "category": "CODE", "action": "NONE",
+      "title": "Other apps can start parts of it",
+      "explanation": "{app} has {count} background parts that any other app can start without permission.",
+      "why": "This is often fine, but a mistake here can let other apps misuse this one. Technical users may want to look at the details.",
+      "when": { "all": ["exportedUnprotected"] }
+    },
+    {
+      "id": "unsigned",
+      "severity": "INFO", "category": "IDENTITY", "action": "NONE",
+      "title": "We couldn't read who made it",
+      "explanation": "We couldn't read a digital signature for {app}.",
+      "why": "Android won't install apps without a valid signature. If this is a file you're about to install, it may be damaged or incomplete.",
+      "when": { "all": ["unsigned"] }
+    },
+    {
+      "id": "partial_scan",
+      "severity": "INFO", "category": "CODE", "action": "NONE",
+      "title": "We could only check part of this app",
+      "explanation": "{app} is very large, so we stopped early to keep your TV running smoothly.",
+      "why": "Some code wasn't checked, so there may be things we didn't see.",
+      "when": { "all": ["partialScan"] }
+    }
+  ]
+}

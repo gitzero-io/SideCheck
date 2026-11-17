@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "libraries": [
+    { "glob": "libjiagu*.so", "vendor": "Qihoo 360 Jiagu" },
+    { "glob": "libsecexe.so", "vendor": "Bangcle" },
+    { "glob": "libsecmain.so", "vendor": "Bangcle" },
+    { "glob": "libDexHelper*.so", "vendor": "SecNeo / Bangcle" },
+    { "glob": "libprotectClass.so", "vendor": "Unknown protector" },
+    { "glob": "libshell*.so", "vendor": "Tencent Legu" },
+    { "glob": "libexecmain.so", "vendor": "Ijiami" },
+    { "glob": "libbaiduprotect*.so", "vendor": "Baidu" },
+    { "glob": "libmobisec*.so", "vendor": "Alibaba" },
+    { "glob": "libAPKProtect*.so", "vendor": "APKProtect" },
+    { "glob": "libchaosvmp.so", "vendor": "Naga" },
+    { "glob": "libddog.so", "vendor": "Naga" }
+  ]
+}

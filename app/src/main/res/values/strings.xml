@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SideCheck</string>
+    <string name="check_apk_label">Check with SideCheck</string>
+</resources>
