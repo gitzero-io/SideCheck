@@ -1,6 +1,7 @@
 package com.bastionsecurity.sidecheck
 
 import android.app.Application
+import com.bastionsecurity.sidecheck.collect.FirmwareCheck
 import com.bastionsecurity.sidecheck.collect.PackageCollector
 import com.bastionsecurity.sidecheck.data.ScanRepository
 import com.bastionsecurity.sidecheck.data.TrustStore
@@ -8,7 +9,8 @@ import com.bastionsecurity.sidecheck.data.WatchState
 import com.bastionsecurity.sidecheck.engine.Analyzer
 import com.bastionsecurity.sidecheck.engine.providers.BundledRuleSetProvider
 import com.bastionsecurity.sidecheck.engine.providers.FreeTier
-import com.bastionsecurity.sidecheck.engine.providers.NoOpReputationProvider
+import com.bastionsecurity.sidecheck.engine.malware.LocalMalwareReputationProvider
+import com.bastionsecurity.sidecheck.engine.providers.RuleBundle
 import com.bastionsecurity.sidecheck.engine.providers.PremiumFeatures
 import com.bastionsecurity.sidecheck.grants.GrantInspector
 import com.bastionsecurity.sidecheck.grants.ShizukuBridge
@@ -38,10 +40,14 @@ class AppContainer(val app: Application) {
 
     val premium: PremiumFeatures = FreeTier
 
-    val analyzer: Analyzer by lazy {
-        // v1: bundled rules, no reputation lookups (no INTERNET permission).
-        Analyzer(BundledRuleSetProvider().loadBlocking(), NoOpReputationProvider)
-    }
+    val bundle: RuleBundle by lazy { BundledRuleSetProvider().loadBlocking() }
+
+    /** Offline known-malware list (bundled). A cloud lookup can be layered on later (premium). */
+    val malware: LocalMalwareReputationProvider by lazy { LocalMalwareReputationProvider(bundle.malware) }
+
+    val analyzer: Analyzer by lazy { Analyzer(bundle, malware) }
+
+    val firmwareCheck: FirmwareCheck by lazy { FirmwareCheck(app, malware.matcher) { collector } }
 
     val collector: PackageCollector by lazy {
         PackageCollector(app.packageManager, app.packageName, analyzer.apkInspector)
@@ -49,7 +55,7 @@ class AppContainer(val app: Application) {
 
     val trust = TrustStore(app)
     val watch = WatchState(app)
-    val repository = ScanRepository(app, { collector }, { analyzer }, trust, watch, appScope)
+    val repository = ScanRepository(app, { collector }, { analyzer }, { firmwareCheck }, trust, watch, appScope)
     val notifier = Notifier(app)
     val backgroundChecker = BackgroundChecker(app, { collector }, repository, trust, watch, notifier)
     val shizuku = ShizukuBridge(app)

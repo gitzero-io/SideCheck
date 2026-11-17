@@ -54,7 +54,15 @@ object Grader {
             Severity.MEDIUM -> Grade.B to "Capped at B because of a medium-severity finding"
             else -> null to null
         }
-        val grade = if (cap != null && cap > byScore) cap else byScore
+        var grade = if (cap != null && cap > byScore) cap else byScore
+        var reasonOut = if (grade != byScore) reason else null
+        // Rule-specific caps (e.g. a known-malware match is always an F).
+        scored.mapNotNull { f -> f.gradeCap?.let { f to it } }.maxByOrNull { it.second }?.let { (f, c) ->
+            if (c > grade) {
+                grade = c
+                reasonOut = "Set to ${c.label} because: ${f.plainTitle.replaceFirstChar { it.lowercase() }}"
+            }
+        }
         return Result(
             score = score,
             grade = grade,
@@ -63,7 +71,7 @@ object Grader {
                 startingScore = START,
                 deductions = deductions,
                 rawScore = score,
-                capReason = if (grade != byScore) reason else null,
+                capReason = reasonOut,
             ),
         )
     }

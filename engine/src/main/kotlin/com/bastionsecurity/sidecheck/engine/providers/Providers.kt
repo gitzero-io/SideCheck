@@ -1,6 +1,7 @@
 package com.bastionsecurity.sidecheck.engine.providers
 
 import com.bastionsecurity.sidecheck.engine.impersonation.KnownAppsCatalog
+import com.bastionsecurity.sidecheck.engine.malware.MalwareDb
 import com.bastionsecurity.sidecheck.engine.model.ReputationResult
 import com.bastionsecurity.sidecheck.engine.rules.RuleSet
 import com.bastionsecurity.sidecheck.engine.trackers.TrackerCatalog
@@ -15,12 +16,12 @@ interface ReputationProvider {
     val name: String
 
     /** Returns null when the service has no opinion. Must not throw for "not found". */
-    suspend fun lookup(apkSha256: String?, packageName: String, signerSha256: String?): ReputationResult?
+    suspend fun lookup(apkSha256: String?, packageName: String, signerSha256s: List<String>): ReputationResult?
 }
 
 object NoOpReputationProvider : ReputationProvider {
     override val name = "none"
-    override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256: String?): ReputationResult? = null
+    override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256s: List<String>): ReputationResult? = null
 }
 
 @Serializable
@@ -35,6 +36,7 @@ data class RuleBundle(
     val trackers: TrackerCatalog,
     val knownApps: KnownAppsCatalog,
     val packers: PackerList,
+    val malware: MalwareDb,
 )
 
 /**
@@ -54,6 +56,7 @@ class BundledRuleSetProvider : RuleSetProvider {
         trackers = json.decodeFromString(resource("trackers.json")),
         knownApps = json.decodeFromString(resource("known_apps.json")),
         packers = json.decodeFromString(resource("packers.json")),
+        malware = json.decodeFromString(resource("malware_db.json")),
     )
 
     private fun resource(name: String): String =

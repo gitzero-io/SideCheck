@@ -40,7 +40,7 @@ class Analyzer(
 
     suspend fun analyze(facts: AppFacts): AppReport {
         val rep: ReputationResult? = try {
-            reputation.lookup(facts.apkSha256, facts.packageName, facts.primarySigner?.sha256)
+            reputation.lookup(facts.apkSha256, facts.packageName, facts.signers.map { it.sha256 })
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {

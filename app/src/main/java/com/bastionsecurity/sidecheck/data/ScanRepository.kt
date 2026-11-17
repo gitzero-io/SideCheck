@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.bastionsecurity.sidecheck.collect.FirmwareCheck
+import com.bastionsecurity.sidecheck.collect.FirmwareMatch
 import com.bastionsecurity.sidecheck.collect.PackageCollector
 import com.bastionsecurity.sidecheck.engine.Analyzer
 import com.bastionsecurity.sidecheck.engine.model.AppReport
@@ -64,6 +66,7 @@ class ScanRepository(
     private val context: Context,
     private val collector: () -> PackageCollector,
     private val analyzer: () -> Analyzer,
+    private val firmware: () -> FirmwareCheck,
     private val trust: TrustStore,
     private val watch: WatchState,
     private val scope: CoroutineScope,
@@ -95,6 +98,24 @@ class ScanRepository(
     private val countKey = intPreferencesKey("last_scan_apps")
     private val attentionKey = intPreferencesKey("last_scan_attention")
     private val attentionSetKey = stringSetPreferencesKey("last_scan_attention_apps") // pkg|cert
+    private val firmwareKey = stringSetPreferencesKey("firmware_matches") // pkg|family|source|signer|url|label
+
+    /** Preinstalled apps that matched the known-malware list in the last full scan. */
+    val firmwareMatches: Flow<List<FirmwareMatch>> = context.scanDataStore.data.map { p ->
+        p[firmwareKey].orEmpty().mapNotNull { row ->
+            val f = row.split('|', limit = 6)
+            if (f.size < 6) null else FirmwareMatch(f[0], f[5], f[1], f[2], f[4], f[3] == "1", enabled = true)
+        }.sortedBy { it.label.lowercase() }
+    }
+
+    private suspend fun saveFirmware(list: List<FirmwareMatch>) {
+        context.scanDataStore.edit { p ->
+            p[firmwareKey] = list.map { m ->
+                listOf(m.packageName, m.family.replace("|", "/"), m.source.replace("|", "/"),
+                    if (m.bySigner) "1" else "0", m.sourceUrl.replace("|", "%7C"), m.label).joinToString("|")
+            }.toSet()
+        }
+    }
 
     val lastScan: Flow<LastScan?> = context.scanDataStore.data.map { p ->
         p[timeKey]?.let { LastScan(it, p[countKey] ?: 0, p[attentionKey] ?: 0, p[attentionSetKey].orEmpty()) }
@@ -126,6 +147,9 @@ class ScanRepository(
                             .onFailure { Log.w(TAG, "Analysis failed for $pkg", it) }
                     }
                 }
+                _state.value = ScanState.Scanning(pkgs.size, pkgs.size, "built-in apps")
+                val fw = runCatching { firmware().run() }.onFailure { Log.w(TAG, "Firmware check failed", it) }.getOrNull()
+                if (fw != null) saveFirmware(fw)
                 _reports.value = out
                 _hasResults.value = true
                 // Baseline for background checks: later updates are compared against these.

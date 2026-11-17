@@ -84,6 +84,10 @@ class ShizukuBridge(private val context: Context) {
     suspend fun setAppOp(pkg: String, op: String, allow: Boolean) =
         run("appops", "set", checkName(pkg), checkName(op), if (allow) "allow" else "ignore")
 
+    /** Turns an app off for this user (works for preinstalled apps that can't be uninstalled). */
+    suspend fun setPackageEnabled(pkg: String, enabled: Boolean) =
+        run("pm", if (enabled) "enable" else "disable-user", "--user", "current", checkName(pkg))
+
     /** Returns "allow", "ignore", "deny", "default", or null if it couldn't be read. */
     suspend fun getAppOp(pkg: String, op: String): String? {
         val r = run("appops", "get", checkName(pkg), checkName(op))

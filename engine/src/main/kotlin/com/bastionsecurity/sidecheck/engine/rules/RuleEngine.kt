@@ -66,6 +66,7 @@ class RuleEngine(private val ruleSet: RuleSet) {
                 technicalEvidence = hits.flatMap { it.evidence }.distinct(),
                 suggestedAction = rule.action,
                 isHeuristic = rule.heuristic,
+                gradeCap = rule.gradeCap,
             )
         }
 

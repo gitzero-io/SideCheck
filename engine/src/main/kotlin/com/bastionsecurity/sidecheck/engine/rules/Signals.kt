@@ -32,7 +32,7 @@ data class SignalHit(
  *  - publicIps: {ips}, {ipCount}
  *  - exportedUnprotected: {count}
  *  - dangerousPermissions: {permissionList}
- *  - knownMalware: {source}, {malwareName}
+ *  - knownMalwareFile / knownMalwareSigner: {source}, {malwareName}
  *  - partialScan: {reasons}
  *  - Always: {app}, {targetSdk}, {androidVersion}
  */
@@ -212,15 +212,8 @@ object Signals {
                 )
             }
         },
-        "knownMalware" to { c ->
-            c.reputation?.takeIf { it.knownMalicious }?.let {
-                hit(
-                    "Reputation source: ${it.source}",
-                    "Label: ${it.label ?: "unknown"}",
-                    params = mapOf("source" to it.source, "malwareName" to (it.label ?: "known malware")),
-                )
-            }
-        },
+        "knownMalwareFile" to { c -> malware(c, com.bastionsecurity.sidecheck.engine.model.ReputationResult.MatchedBy.FILE) },
+        "knownMalwareSigner" to { c -> malware(c, com.bastionsecurity.sidecheck.engine.model.ReputationResult.MatchedBy.SIGNER) },
         "partialScan" to { c ->
             val d = c.facts.dexScan
             if (d != null && d.truncated) {
@@ -230,6 +223,20 @@ object Signals {
             }
         },
     )
+
+    private fun malware(c: RuleContext, by: com.bastionsecurity.sidecheck.engine.model.ReputationResult.MatchedBy): SignalHit? {
+        val r = c.reputation?.takeIf { it.knownMalicious && it.matchedBy == by } ?: return null
+        return SignalHit(
+            listOfNotNull(
+                "Listed by: ${r.source}",
+                r.sourceUrl?.let { "Report: $it" },
+                "Family: ${r.label ?: "unknown"}",
+                r.matchedValue?.let { (if (by == com.bastionsecurity.sidecheck.engine.model.ReputationResult.MatchedBy.FILE) "File SHA-256: " else "Signing certificate SHA-256: ") + it },
+                r.detail,
+            ),
+            mapOf("source" to r.source, "malwareName" to (r.label ?: "known malware")),
+        )
+    }
 
     private fun trackers(c: RuleContext, range: IntRange): SignalHit? {
         val hits = c.facts.dexScan?.trackerHits.orEmpty()

@@ -1,6 +1,7 @@
 package com.bastionsecurity.sidecheck.engine.rules
 
 import com.bastionsecurity.sidecheck.engine.model.Category
+import com.bastionsecurity.sidecheck.engine.model.Grade
 import com.bastionsecurity.sidecheck.engine.model.Severity
 import com.bastionsecurity.sidecheck.engine.model.SuggestedAction
 import kotlinx.serialization.Serializable
@@ -36,6 +37,8 @@ data class RuleDef(
     /** True if the evidence is a hint from code strings rather than a declared fact. */
     val heuristic: Boolean = false,
     val enabled: Boolean = true,
+    /** Grade can be no better than this when the rule fires (e.g. "F" for known malware). */
+    val gradeCap: Grade? = null,
 )
 
 @Serializable

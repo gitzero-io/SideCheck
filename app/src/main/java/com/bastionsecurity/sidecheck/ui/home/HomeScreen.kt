@@ -46,6 +46,7 @@ import com.bastionsecurity.sidecheck.ui.components.GradeBadge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import com.bastionsecurity.sidecheck.ui.components.FocusCard
 import com.bastionsecurity.sidecheck.ui.components.Panel
 import com.bastionsecurity.sidecheck.ui.components.PrimaryButton
@@ -58,6 +59,10 @@ import kotlinx.coroutines.flow.stateIn
 data class RecentItem(val packageName: String, val label: String, val isNew: Boolean, val grade: Grade?)
 
 class HomeViewModel(context: Application, private val repo: ScanRepository, watch: WatchState, trust: TrustStore) : ViewModel() {
+    /** Built-in apps matching the known-malware list (from the last full scan). */
+    val firmwareCount: StateFlow<Int> = repo.firmwareMatches.map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
     /** Saved "needs attention" apps minus any the user has since trusted. */
     val savedAttention: StateFlow<Int?> = combine(repo.lastScan, trust.snapshot) { last, t ->
         last?.let { l -> if (l.attentionApps.isEmpty()) l.attentionCount else l.attentionApps.count { it !in t.trustedApps } }
@@ -85,6 +90,7 @@ fun HomeScreen(
     onOpenResults: () -> Unit,
     onOpenTrusted: () -> Unit,
     onOpenApp: (String) -> Unit,
+    onOpenFirmware: () -> Unit,
     onCheckApp: () -> Unit,
 ) {
     val state by vm.scanState.collectAsStateWithLifecycle()
@@ -93,6 +99,7 @@ fun HomeScreen(
     val entries by vm.entries.collectAsStateWithLifecycle()
     val recent by vm.recent.collectAsStateWithLifecycle()
     val savedAttention by vm.savedAttention.collectAsStateWithLifecycle()
+    val firmwareCount by vm.firmwareCount.collectAsStateWithLifecycle()
     val scanFocus = remember { FocusRequester() }
 
     // Jump to results when a scan the user started finishes.
@@ -110,12 +117,15 @@ fun HomeScreen(
         Column(Modifier.weight(1.25f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
             Text("SideCheck", style = MaterialTheme.typography.displaySmall, color = SC.Text)
             Text("by Bastion Security", style = MaterialTheme.typography.bodyMedium, color = SC.Brand)
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "See what the apps on this TV can really do. You decide what stays.",
-                style = MaterialTheme.typography.headlineSmall,
-                color = SC.TextDim,
-            )
+            // The tagline makes room for the firmware warning when there is one.
+            if (firmwareCount == 0) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    "See what the apps on this TV can really do. You decide what stays.",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = SC.TextDim,
+                )
+            }
             Spacer(Modifier.height(28.dp))
 
             when (val s = state) {
@@ -135,6 +145,17 @@ fun HomeScreen(
                 )
             }
             Spacer(Modifier.height(28.dp))
+            if (firmwareCount > 0) {
+                FocusCard(onClick = onOpenFirmware, modifier = Modifier.width(560.dp), container = SC.Danger.copy(alpha = 0.22f)) {
+                    Text("Your TV box's built-in software matches known malware", style = MaterialTheme.typography.titleLarge, color = SC.Text)
+                    Text(
+                        "$firmwareCount built-in app${if (firmwareCount == 1) "" else "s"} matched. Select to see what you can do.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SC.TextDim,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
             Summary(hasResults, entries, last, savedAttention)
         }
 

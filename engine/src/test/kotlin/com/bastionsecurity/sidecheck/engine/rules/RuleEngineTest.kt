@@ -224,15 +224,16 @@ class RuleEngineTest {
     fun `reputation hit is critical and lookup failure is ignored`() = runTest {
         val bad = object : ReputationProvider {
             override val name = "test"
-            override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256: String?) =
+            override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256s: List<String>) =
                 ReputationResult("TestDB", true, "Trojan.Test", null)
         }
         val r = Analyzer(Fixtures.bundle, bad).analyze(facts())
-        assertEquals("known_malware", r.findings.first().id)
+        assertEquals("known_malware_file", r.findings.first().id)
+        assertEquals(Grade.F, r.grade) // a known-malware match is always an F
 
         val broken = object : ReputationProvider {
             override val name = "broken"
-            override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256: String?): ReputationResult? =
+            override suspend fun lookup(apkSha256: String?, packageName: String, signerSha256s: List<String>): ReputationResult? =
                 error("offline")
         }
         val ok = Analyzer(Fixtures.bundle, broken).analyze(facts())

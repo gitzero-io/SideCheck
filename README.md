@@ -122,6 +122,21 @@ crash an older app). Tests check that every bundled rule is supported and every 
 | `known_apps.json` | Brand → official package names | `signingCertSha256` is **empty on purpose** — see TODO below. |
 | `packers.json` | Packer/protector native library globs | Name-based only; custom names won't be caught. |
 
+## Known-malware list (botnets)
+
+SideCheck bundles an offline list of known-malware **APK SHA-256** and **signing-certificate
+SHA-256** hashes (`engine/src/main/resources/sidecheck/malware_db.json`).
+- A sideloaded app or APK file that matches gets a CRITICAL finding and is always graded **F**
+  ("This exact app is known malware" / "Made by the people behind known malware").
+- **Preinstalled (firmware) apps** are checked against the list only — no grading. Botnets such
+  as BadBox 2.0 and Vo1d often ship inside cheap boxes' firmware. A match shows a warning on
+  Home and a "Built-in apps that match known malware" screen with "Turn off" (via Shizuku or the
+  app's Settings page). System APKs over 128 MB aren't file-hashed (certificate matching still applies).
+- Every entry cites its source. The list is compiled by `tools/malware-db/build_malware_db.py`,
+  which only includes sources listed in `tools/malware-db/cleared_sources.txt`.
+  **It ships empty** until a source is cleared for redistribution — see `tools/malware-db/README.md`.
+- No internet: the list updates when a new SideCheck version is published.
+
 ## Permissions SideCheck asks for
 
 | Permission | Why |
@@ -168,7 +183,8 @@ Android doesn't let normal apps grant/revoke other apps' permissions. SideCheck:
 
 ## Prepared for later (not built)
 
-- `ReputationProvider` — hash lookups (own backend, MalwareBazaar, VirusTotal). v1: no-op.
+- `ReputationProvider` — v1 uses the bundled known-malware list; a cloud lookup (own backend,
+  MalwareBazaar, VirusTotal) can be layered on later, e.g. as a premium feature.
 - `RuleSetProvider` — download signed rule/tracker/known-app bundles between releases. v1: bundled.
 - `PremiumFeatures` — free/paid gate. v1: `FreeTier`, everything off.
 - **VPN recommendation** (referral, not a VPN in SideCheck): must be labeled as a paid referral,
@@ -209,6 +225,8 @@ Without `keystore.properties` (e.g. on another machine), release builds come out
       password in two places** — losing either means existing installs can never be updated.
 - [ ] **Verified certificate hashes** in `known_apps.json` → `signingCertSha256`. Only from APKs you
       trust (e.g. installed from Google Play), via `apksigner verify --print-certs`. Never guess.
+- [ ] **Fill the known-malware list**: clear at least one source (e.g. ask Nokia Deepfield for
+      permission, or confirm abuse.ch MalwareBazaar's terms), then run the build script.
 - [ ] Replace the bundled tracker list with the Exodus Privacy list (check its license terms).
 - [ ] Turn on R8 for release (`optimization.enable = true`) and keep the Shizuku rule in
       `app/src/main/keepRules/rules.keep`; test the release build on a box.

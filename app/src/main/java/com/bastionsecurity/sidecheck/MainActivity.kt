@@ -27,6 +27,8 @@ import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.Text
 import com.bastionsecurity.sidecheck.ui.detail.DetailScreen
 import com.bastionsecurity.sidecheck.ui.detail.DetailViewModel
+import com.bastionsecurity.sidecheck.ui.firmware.FirmwareScreen
+import com.bastionsecurity.sidecheck.ui.firmware.FirmwareViewModel
 import com.bastionsecurity.sidecheck.ui.home.HomeScreen
 import com.bastionsecurity.sidecheck.ui.home.HomeViewModel
 import com.bastionsecurity.sidecheck.ui.pick.PickAppScreen
@@ -83,6 +85,7 @@ private fun AppNav(c: AppContainer, startPackage: String?) {
             HomeScreen(
                 vm,
                 onOpenApp = { nav.navigate("app/$it") },
+                onOpenFirmware = { nav.navigate("firmware") },
                 onOpenResults = { nav.navigate("results/${ResultsFilter.ATTENTION.name}") { launchSingleTop = true } },
                 onOpenTrusted = { nav.navigate("results/${ResultsFilter.TRUSTED.name}") },
                 onCheckApp = { nav.navigate("pick") },
@@ -92,6 +95,10 @@ private fun AppNav(c: AppContainer, startPackage: String?) {
             val filter = runCatching { ResultsFilter.valueOf(back.arguments?.getString("filter")!!) }.getOrDefault(ResultsFilter.ALL)
             val vm = viewModel { ResultsViewModel(c.repository) }
             ResultsScreen(vm, filter, onOpenApp = { nav.navigate("app/$it") }, onBackHome = { nav.popBackStack("home", false) })
+        }
+        composable("firmware") {
+            val vm = viewModel { FirmwareViewModel(c.app, c.repository, c.shizuku) }
+            FirmwareScreen(vm)
         }
         composable("pick") {
             val vm = viewModel { PickAppViewModel(c.app, { c.collector }, c.repository) }

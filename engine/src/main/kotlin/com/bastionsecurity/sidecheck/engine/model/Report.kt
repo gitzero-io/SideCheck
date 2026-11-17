@@ -50,8 +50,11 @@ data class Finding(
     val countedIn: String? = null,
     /** True for findings based on string hints rather than proof (e.g. dex string matches). */
     val isHeuristic: Boolean = false,
+    /** If set, the app's grade can be no better than this (e.g. known malware → F). */
+    val gradeCap: Grade? = null,
 )
 
+@Serializable
 enum class Grade(val label: String) { A("A"), B("B"), C("C"), D("D"), F("F") }
 
 data class GradeBreakdown(
@@ -79,4 +82,10 @@ data class ReputationResult(
     val knownMalicious: Boolean,
     val label: String?,
     val detail: String?,
-)
+    val matchedBy: MatchedBy = MatchedBy.FILE,
+    /** The hash that matched (file or certificate SHA-256). */
+    val matchedValue: String? = null,
+    val sourceUrl: String? = null,
+) {
+    enum class MatchedBy { FILE, SIGNER }
+}
