@@ -174,15 +174,39 @@ Android doesn't let normal apps grant/revoke other apps' permissions. SideCheck:
 - **VPN recommendation** (referral, not a VPN in SideCheck): must be labeled as a paid referral,
   must never influence the grade of any VPN app, and needs no internet (link/QR only).
 
+## Release signing
+
+Release builds are signed when `keystore.properties` exists in the project root (it is
+git-ignored). It points at the keystore, which lives **outside** the project:
+
+```properties
+storeFile=/Users/<you>/Keys/BastionSecurity/sidecheck-release.jks
+storePassword=...
+keyAlias=sidecheck
+keyPassword=...
+```
+
+- Key: RSA 4096, alias `sidecheck`, valid 30 years, signed with APK Signature Scheme v2 + v3
+  (v3 allows rotating to a new key later without forcing users to uninstall).
+- Certificate: `CN=Bastion Security, OU=SideCheck, O=Bastion Security, C=US`
+- Certificate SHA-256: `59d9d14f0894305ea0e25503b95040b983dc82c8748852966a1a922db2b04e9f`
+  (publish this so users can verify downloads are really yours)
+
+```bash
+./gradlew :app:assembleRelease     # → app/build/outputs/apk/release/app-release.apk
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
+Without `keystore.properties` (e.g. on another machine), release builds come out unsigned.
+
 ## TODO before shipping
 
 - [ ] **Developer verification.** Google is rolling out developer verification for apps installed on
       certified Android devices, including sideloaded ones; the US is expected to follow in 2027.
       Verify the Bastion Security developer account and register `com.bastionsecurity.sidecheck`
       so SideCheck itself installs without friction.
-- [ ] **Release signing.** `assembleRelease` produces an unsigned APK. Create an upload/release
-      keystore, back it up in two places, and add a `signingConfigs` block (keep passwords out of
-      git). Losing the key means existing installs can never be updated.
+- [x] **Release signing.** Set up (see "Release signing" below). **Back up the keystore and its
+      password in two places** — losing either means existing installs can never be updated.
 - [ ] **Verified certificate hashes** in `known_apps.json` → `signingCertSha256`. Only from APKs you
       trust (e.g. installed from Google Play), via `apksigner verify --print-certs`. Never guess.
 - [ ] Replace the bundled tracker list with the Exodus Privacy list (check its license terms).
