@@ -56,6 +56,11 @@ import com.bastionsecurity.sidecheck.ui.report.FindingRow
 import com.bastionsecurity.sidecheck.ui.report.GradeCard
 import com.bastionsecurity.sidecheck.ui.report.TechDetails
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.screenPadding
+import com.bastionsecurity.sidecheck.ui.theme.tvWidth
+import com.bastionsecurity.sidecheck.ui.theme.deviceNoun
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 import java.util.Date
 
 @Composable
@@ -75,13 +80,14 @@ fun DetailScreen(vm: DetailViewModel, onGone: () -> Unit) {
     }
     LaunchedEffect(removed) { if (removed) onGone() }
 
+    val phone = isPhone()
     val e = entry
     if (e == null) {
         Box(Modifier.fillMaxSize().background(SC.Bg), contentAlignment = Alignment.Center) {
             if (failed) {
                 val retryFocus = remember { FocusRequester() }
-                LaunchedEffect(Unit) { runCatching { retryFocus.requestFocus() } }
-                Column(Modifier.width(560.dp)) {
+                LaunchedEffect(Unit) { retryFocus.focusFirst(phone) }
+                Column(Modifier.tvWidth(560.dp).padding(screenPadding())) {
                     Text("We couldn't check this app", style = MaterialTheme.typography.headlineMedium)
                     Text(
                         "Something went wrong while reading it. Your choices about this app are unchanged.",
@@ -101,6 +107,7 @@ fun DetailScreen(vm: DetailViewModel, onGone: () -> Unit) {
     val firstFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
     LaunchedEffect(Unit) {
+        if (phone) return@LaunchedEffect // no starting focus on touch screens
         runCatching { firstFocus.requestFocus() }
         // Focusing the buttons scrolls them into view on the next frame; scroll back so the app
         // name and grade stay visible.
@@ -113,7 +120,7 @@ fun DetailScreen(vm: DetailViewModel, onGone: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize().background(SC.Bg),
         state = listState,
-        contentPadding = PaddingValues(horizontal = 56.dp, vertical = 32.dp),
+        contentPadding = screenPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item { Header(e, vm.installSourceText(f)) }
@@ -186,15 +193,20 @@ fun DetailScreen(vm: DetailViewModel, onGone: () -> Unit) {
 @Composable
 private fun Header(e: AppEntry, source: String) {
     val f = e.report.facts
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-        AppIcon(f.packageName, 72.dp)
+    val phone = isPhone()
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (phone) 14.dp else 20.dp)) {
+        AppIcon(f.packageName, if (phone) 56.dp else 72.dp)
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(f.label, style = MaterialTheme.typography.displaySmall)
                 if (!f.enabled) Pill("Turned off", SC.TextDim)
             }
             val added = f.firstInstallTime?.let { " · Added " + java.text.DateFormat.getDateInstance().format(Date(it)) }.orEmpty()
-            Text("Version ${f.versionName ?: f.versionCode} · $source$added", style = MaterialTheme.typography.bodyLarge, color = SC.TextDim)
+            Text(
+                "Version ${f.versionName ?: f.versionCode} · $source$added",
+                style = if (phone) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+                color = SC.TextDim,
+            )
         }
     }
 }
@@ -215,7 +227,7 @@ private fun ShizukuPanel(status: ShizukuBridge.Status, onRequest: () -> Unit) {
             }
             ShizukuBridge.Status.NOT_RUNNING -> {
                 Text("Shizuku is installed but not running", style = MaterialTheme.typography.titleMedium)
-                Text("Start it in the Shizuku app (it needs restarting after the TV reboots). Until then, buttons open Android Settings.", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
+                Text("Start it in the Shizuku app (it needs restarting after the ${deviceNoun()} restarts). Until then, buttons open Android Settings.", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
             }
             ShizukuBridge.Status.NOT_INSTALLED -> {
                 Text("Buttons below open Android Settings, where you can make changes.", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
@@ -227,22 +239,44 @@ private fun ShizukuPanel(status: ShizukuBridge.Status, onRequest: () -> Unit) {
 
 @Composable
 private fun GrantRow(grant: Grant, shizukuReady: Boolean, busy: Boolean, onToggle: () -> Unit, onSettings: () -> Unit) {
+    val status: @Composable () -> Unit = {
+        when (grant.allowed) {
+            true -> Pill("Allowed", SC.grade(com.bastionsecurity.sidecheck.engine.model.Grade.C))
+            false -> Pill("Not allowed", SC.TextDim)
+            null -> Pill("Can't check", SC.TextFaint)
+        }
+    }
+    val action: @Composable () -> Unit = {
+        when {
+            shizukuReady && grant.shizukuToggle != null ->
+                SecondaryButton(
+                    if (grant.allowed == true) "Turn off" else "Turn on",
+                    onToggle,
+                    enabled = !busy,
+                    modifier = if (isPhone()) Modifier else Modifier.width(150.dp),
+                )
+            grant.settingsIntent != null -> SecondaryButton("Change in Settings", onSettings)
+            else -> Text("Change it in Android Settings", style = MaterialTheme.typography.bodySmall, color = SC.TextFaint)
+        }
+    }
     Panel(Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(Modifier.weight(1f)) {
-                Text(grant.title, style = MaterialTheme.typography.titleMedium)
-                grant.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = SC.TextFaint) }
+        if (isPhone()) {
+            // Title and status on one line, the button underneath: a single row doesn't fit.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(grant.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                status()
             }
-            when (grant.allowed) {
-                true -> Pill("Allowed", SC.grade(com.bastionsecurity.sidecheck.engine.model.Grade.C))
-                false -> Pill("Not allowed", SC.TextDim)
-                null -> Pill("Can't check", SC.TextFaint)
-            }
-            when {
-                shizukuReady && grant.shizukuToggle != null ->
-                    SecondaryButton(if (grant.allowed == true) "Turn off" else "Turn on", onToggle, enabled = !busy, modifier = Modifier.width(150.dp))
-                grant.settingsIntent != null -> SecondaryButton("Change in Settings", onSettings)
-                else -> Text("Change it in Android Settings", style = MaterialTheme.typography.bodySmall, color = SC.TextFaint)
+            grant.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = SC.TextFaint) }
+            Spacer(Modifier.height(10.dp))
+            action()
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(grant.title, style = MaterialTheme.typography.titleMedium)
+                    grant.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = SC.TextFaint) }
+                }
+                status()
+                action()
             }
         }
     }

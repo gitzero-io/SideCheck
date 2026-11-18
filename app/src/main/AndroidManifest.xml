@@ -37,9 +37,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:screenOrientation="landscape"
-            android:theme="@style/Theme.SideCheck"
-            tools:ignore="DiscouragedApi">
+            android:theme="@style/Theme.SideCheck">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -53,9 +51,7 @@
             android:exported="true"
             android:label="@string/check_apk_label"
             android:launchMode="singleTop"
-            android:screenOrientation="landscape"
-            android:theme="@style/Theme.SideCheck"
-            tools:ignore="DiscouragedApi">
+            android:theme="@style/Theme.SideCheck">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

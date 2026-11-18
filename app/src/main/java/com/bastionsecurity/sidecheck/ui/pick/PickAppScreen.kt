@@ -37,6 +37,10 @@ import com.bastionsecurity.sidecheck.ui.components.AppIcon
 import com.bastionsecurity.sidecheck.ui.components.FocusCard
 import com.bastionsecurity.sidecheck.ui.components.GradeBadge
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.listScreenPadding
+import com.bastionsecurity.sidecheck.ui.theme.deviceNoun
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -82,15 +86,18 @@ fun PickAppScreen(vm: PickAppViewModel, onPick: (String) -> Unit) {
     val grades by vm.grades.collectAsStateWithLifecycle()
     val first = remember { FocusRequester() }
 
-    Column(Modifier.fillMaxSize().background(SC.Bg).padding(start = 56.dp, end = 56.dp, top = 32.dp)) {
+    val phone = isPhone()
+    val noun = deviceNoun()
+    Column(Modifier.fillMaxSize().background(SC.Bg).padding(listScreenPadding())) {
         Text("Check an app", style = MaterialTheme.typography.displaySmall)
         Text(
-            "Pick an app on this TV to see what it can do.",
+            "Pick an app on this $noun to see what it can do.",
             style = MaterialTheme.typography.bodyLarge,
             color = SC.TextDim,
         )
         Text(
-            "To check an APK before you install it, open the file in Downloader or your file manager and choose SideCheck.",
+            if (phone) "To check an APK before you install it, open the file from your downloads or file manager and choose SideCheck."
+            else "To check an APK before you install it, open the file in Downloader or your file manager and choose SideCheck.",
             style = MaterialTheme.typography.bodyMedium,
             color = SC.TextFaint,
         )
@@ -102,13 +109,14 @@ fun PickAppScreen(vm: PickAppViewModel, onPick: (String) -> Unit) {
                 Text("Loading your apps…", style = MaterialTheme.typography.headlineSmall, color = SC.TextDim)
             }
             list.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No apps have been added to this TV besides the built-in ones.", style = MaterialTheme.typography.headlineSmall, color = SC.TextDim)
+                Text("No apps have been added to this $noun besides the built-in ones.", style = MaterialTheme.typography.headlineSmall, color = SC.TextDim)
             }
             else -> {
                 val repeated = remember(list) { list.groupBy { it.label }.filterValues { it.size > 1 }.keys }
-                LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+                LaunchedEffect(Unit) { first.focusFirst(phone) }
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    // One column on a phone held upright, two or more on wider screens.
+                    columns = if (phone) GridCells.Adaptive(minSize = 280.dp) else GridCells.Fixed(3),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     contentPadding = PaddingValues(top = 4.dp, bottom = 40.dp, start = 4.dp, end = 4.dp),

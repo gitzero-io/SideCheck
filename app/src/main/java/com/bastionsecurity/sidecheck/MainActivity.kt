@@ -12,10 +12,16 @@ import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -25,7 +31,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.Text
+import com.bastionsecurity.sidecheck.data.DeviceMode
+import com.bastionsecurity.sidecheck.data.DeviceModeStore
 import com.bastionsecurity.sidecheck.ui.detail.DetailScreen
+import com.bastionsecurity.sidecheck.ui.setup.DeviceChoiceScreen
 import com.bastionsecurity.sidecheck.ui.detail.DetailViewModel
 import com.bastionsecurity.sidecheck.ui.firmware.FirmwareScreen
 import com.bastionsecurity.sidecheck.ui.firmware.FirmwareViewModel
@@ -38,6 +47,7 @@ import com.bastionsecurity.sidecheck.ui.results.ResultsScreen
 import com.bastionsecurity.sidecheck.ui.results.ResultsViewModel
 import com.bastionsecurity.sidecheck.ui.theme.SC
 import com.bastionsecurity.sidecheck.ui.theme.SideCheckTheme
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,15 +56,43 @@ class MainActivity : ComponentActivity() {
         // On launch: catch up on apps installed/updated since last time. No notifications here;
         // they show on the Home screen instead.
         lifecycleScope.launch { runCatching { c.backgroundChecker.check(notify = false) } }
-        askForNotificationsOnce()
+        DeviceModeStore.applyOrientation(this)
+        // First launch: ask TV vs phone/tablet before anything else (notification prompt waits too).
+        if (DeviceModeStore.get(this) != null) askForNotificationsOnce()
         setContent {
-            SideCheckTheme {
+            var mode by remember { mutableStateOf(DeviceModeStore.get(this)) }
+            SideCheckTheme(mode ?: DeviceModeStore.detect(this)) {
                 // Default text color for anything not inside a card.
                 CompositionLocalProvider(LocalContentColor provides SC.Text) {
-                    AppNav(c, startPackage = intent.getStringExtra(EXTRA_PACKAGE))
+                    // Phones draw under the status and navigation bars (edge-to-edge); keep content clear of them.
+                    Box(Modifier.fillMaxSize().background(SC.Bg).then(if (isPhone()) Modifier.safeDrawingPadding() else Modifier)) {
+                        val current = mode
+                        if (current == null) {
+                            DeviceChoiceScreen(suggested = DeviceModeStore.detect(this@MainActivity)) { chosen ->
+                                mode = chosen
+                                saveMode(chosen)
+                                askForNotificationsOnce()
+                            }
+                        } else {
+                            AppNav(
+                                c,
+                                startPackage = intent.getStringExtra(EXTRA_PACKAGE),
+                                onSwitchDevice = {
+                                    val next = if (current == DeviceMode.TV) DeviceMode.MOBILE else DeviceMode.TV
+                                    mode = next
+                                    saveMode(next)
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private fun saveMode(mode: DeviceMode) {
+        DeviceModeStore.set(this, mode)
+        DeviceModeStore.applyOrientation(this, mode)
     }
 
     private val notificationPermission =
@@ -77,7 +115,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppNav(c: AppContainer, startPackage: String?) {
+private fun AppNav(c: AppContainer, startPackage: String?, onSwitchDevice: () -> Unit) {
     val nav = rememberNavController()
     NavHost(nav, startDestination = "home", modifier = Modifier.fillMaxSize().background(SC.Bg)) {
         composable("home") {
@@ -89,6 +127,7 @@ private fun AppNav(c: AppContainer, startPackage: String?) {
                 onOpenResults = { nav.navigate("results/${ResultsFilter.ATTENTION.name}") { launchSingleTop = true } },
                 onOpenTrusted = { nav.navigate("results/${ResultsFilter.TRUSTED.name}") },
                 onCheckApp = { nav.navigate("pick") },
+                onSwitchDevice = onSwitchDevice,
             )
         }
         composable("results/{filter}", arguments = listOf(navArgument("filter") { type = NavType.StringType })) { back ->

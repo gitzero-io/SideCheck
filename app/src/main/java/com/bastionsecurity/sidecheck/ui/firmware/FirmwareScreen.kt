@@ -43,6 +43,9 @@ import com.bastionsecurity.sidecheck.ui.components.Pill
 import com.bastionsecurity.sidecheck.ui.components.PrimaryButton
 import com.bastionsecurity.sidecheck.ui.components.SecondaryButton
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.screenPadding
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -89,20 +92,21 @@ fun FirmwareScreen(vm: FirmwareViewModel) {
         vm.onResume()
         onPauseOrDispose { }
     }
-    LaunchedEffect(matches.isNotEmpty()) { if (matches.isNotEmpty()) runCatching { first.requestFocus() } }
+    val phone = isPhone()
+    LaunchedEffect(matches.isNotEmpty()) { if (matches.isNotEmpty()) first.focusFirst(phone) }
 
     LazyColumn(
         Modifier.fillMaxSize().background(SC.Bg),
-        contentPadding = PaddingValues(horizontal = 56.dp, vertical = 32.dp),
+        contentPadding = screenPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             Text("Built-in apps that match known malware", style = MaterialTheme.typography.displaySmall)
             Spacer(Modifier.height(6.dp))
             Text(
-                "These apps came with your TV box. Their files or digital signatures match malware that " +
+                "These apps came with your ${if (phone) "device" else "TV box"}. Their files or digital signatures match malware that " +
                     "security researchers have reported, often used to turn TV boxes into botnets. " +
-                    "That can mean strangers use your internet connection, or your box takes part in attacks on websites.",
+                    "That can mean strangers use your internet connection, or your ${if (phone) "device" else "box"} takes part in attacks on websites.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = SC.TextDim,
             )
@@ -112,8 +116,8 @@ fun FirmwareScreen(vm: FirmwareViewModel) {
                 Text("What you can do", style = MaterialTheme.typography.titleLarge)
                 Text(
                     "• Turn the app off below. That usually stops it, but a firmware update can turn it back on.\n" +
-                        "• A factory reset won't remove it, because it's part of the box's software.\n" +
-                        "• Contact the seller, or consider a box that has Google's Play Protect certification.",
+                        "• A factory reset won't remove it, because it's part of the ${if (phone) "device" else "box"}'s software.\n" +
+                        "• Contact the seller, or consider a ${if (phone) "device" else "box"} that has Google's Play Protect certification.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = SC.TextDim,
                 )
@@ -126,7 +130,7 @@ fun FirmwareScreen(vm: FirmwareViewModel) {
         items(matches, key = { it.packageName }) { m ->
             Panel(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    AppIcon(m.packageName, 56.dp)
+                    AppIcon(m.packageName, if (phone) 44.dp else 56.dp)
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(m.label, style = MaterialTheme.typography.headlineSmall)

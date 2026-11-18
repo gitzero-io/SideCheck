@@ -31,20 +31,22 @@ import com.bastionsecurity.sidecheck.ui.components.Panel
 import com.bastionsecurity.sidecheck.ui.components.Pill
 import com.bastionsecurity.sidecheck.ui.components.SecondaryButton
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 
 /** Report pieces shared by the installed-app detail screen and the APK check screen. */
 
 @Composable
 fun GradeCard(r: AppReport) {
     var showHow by rememberSaveable { mutableStateOf(false) }
+    val phone = isPhone()
     FocusCard(onClick = { showHow = !showHow }, modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            GradeBadge(r.grade, 88.dp)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (phone) 16.dp else 24.dp)) {
+            GradeBadge(r.grade, if (phone) 64.dp else 88.dp)
             Column(Modifier.weight(1f)) {
                 Text("Our take", style = MaterialTheme.typography.labelLarge, color = SC.TextFaint)
                 Text(r.verdict, style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Score ${r.score} of 100 · ${if (showHow) "Hide how we graded" else "Select to see how we graded"}",
+                    "Score ${r.score} of 100 · ${if (showHow) "Hide how we graded" else if (phone) "Tap to see how we graded" else "Select to see how we graded"}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = SC.TextDim,
                 )
@@ -95,7 +97,7 @@ fun FindingRow(
             Text(finding.plainExplanation, style = MaterialTheme.typography.bodyLarge, color = SC.TextDim, maxLines = if (expanded) 10 else 2)
         }
         if (expanded) {
-            Panel(Modifier.fillMaxWidth().padding(start = 24.dp), container = SC.SurfaceHigh) {
+            Panel(Modifier.fillMaxWidth().padding(start = if (isPhone()) 12.dp else 24.dp), container = SC.SurfaceHigh) {
                 Text("Why does this matter?", style = MaterialTheme.typography.titleMedium, color = SC.Brand)
                 Text(finding.whyItMatters, style = MaterialTheme.typography.bodyLarge)
                 finding.countedIn?.let {

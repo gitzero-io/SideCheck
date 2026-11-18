@@ -35,6 +35,11 @@ import com.bastionsecurity.sidecheck.ui.report.FindingRow
 import com.bastionsecurity.sidecheck.ui.report.GradeCard
 import com.bastionsecurity.sidecheck.ui.report.TechDetails
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.deviceNoun
+import com.bastionsecurity.sidecheck.ui.theme.tvWidth
+import com.bastionsecurity.sidecheck.ui.theme.screenPadding
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 
 @Composable
 fun ApkCheckScreen(
@@ -67,7 +72,9 @@ private fun Report(s: ApkCheckState.Ready, onInstall: () -> Unit, onDontInstall:
     val f = r.facts
     val focus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    val phone = isPhone()
     LaunchedEffect(s.needsInstallPermission) {
+        if (phone) return@LaunchedEffect // no starting focus on touch screens
         runCatching { focus.requestFocus() }
         kotlinx.coroutines.delay(150)
         listState.scrollToItem(0)
@@ -77,12 +84,12 @@ private fun Report(s: ApkCheckState.Ready, onInstall: () -> Unit, onDontInstall:
     LazyColumn(
         Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(horizontal = 56.dp, vertical = 32.dp),
+        contentPadding = screenPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                AppIcon(f.packageName + "@archive", 72.dp, archivePath = s.file.absolutePath)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (phone) 14.dp else 20.dp)) {
+                AppIcon(f.packageName + "@archive", if (phone) 56.dp else 72.dp, archivePath = s.file.absolutePath)
                 Column {
                     Text("Before you install", style = MaterialTheme.typography.labelLarge, color = SC.Brand)
                     Text(f.label, style = MaterialTheme.typography.displaySmall)
@@ -151,10 +158,11 @@ private fun Report(s: ApkCheckState.Ready, onInstall: () -> Unit, onDontInstall:
 
 @Composable
 private fun ExistingPanel(ex: ExistingInstall, newVersionCode: Long) {
+    val noun = deviceNoun()
     val (title, body, warn) = when {
         ex.sameSigner == false -> Triple(
             "You already have ${ex.label}, from a different maker",
-            "The app on your TV and this file were signed by different people. Android won't install this over it. " +
+            "The app on your $noun and this file were signed by different people. Android won't install this over it. " +
                 "If you install it anyway, you'd have to remove the current one first, and you'll lose its data.",
             true,
         )
@@ -163,7 +171,7 @@ private fun ExistingPanel(ex: ExistingInstall, newVersionCode: Long) {
             "You have version ${ex.versionName ?: ex.versionCode}. Android usually won't install an older version over a newer one.",
             true,
         )
-        newVersionCode == ex.versionCode -> Triple("You already have this version", "It's the same version that's on your TV now.", false)
+        newVersionCode == ex.versionCode -> Triple("You already have this version", "It's the same version that's on your $noun now.", false)
         else -> Triple("This updates ${ex.label}", "You have version ${ex.versionName ?: ex.versionCode} now. It comes from the same maker.", false)
     }
     Panel(Modifier.fillMaxWidth(), container = if (warn) SC.SurfaceHigh else SC.Surface) {
@@ -175,7 +183,8 @@ private fun ExistingPanel(ex: ExistingInstall, newVersionCode: Long) {
 @Composable
 private fun InstalledView(s: ApkCheckState.Installed, onOpenApp: (String) -> Unit, onDone: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val phone = isPhone()
+    LaunchedEffect(Unit) { focus.focusFirst(phone) }
     Centered {
         Text("${s.label} is installed", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
@@ -191,7 +200,8 @@ private fun InstalledView(s: ApkCheckState.Installed, onOpenApp: (String) -> Uni
 @Composable
 private fun Message(title: String, body: String, action: Pair<String, () -> Unit>?, onDone: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(title) { runCatching { focus.requestFocus() } }
+    val phone = isPhone()
+    LaunchedEffect(title) { focus.focusFirst(phone) }
     Centered {
         Text(title, style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
@@ -211,6 +221,6 @@ private fun Message(title: String, body: String, action: Pair<String, () -> Unit
 @Composable
 private fun Centered(content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(Modifier.width(640.dp), horizontalAlignment = Alignment.Start) { content() }
+        Column(Modifier.tvWidth(640.dp).padding(screenPadding()), horizontalAlignment = Alignment.Start) { content() }
     }
 }

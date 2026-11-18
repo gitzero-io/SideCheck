@@ -1,6 +1,7 @@
 package com.bastionsecurity.sidecheck.ui.theme
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -9,6 +10,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
+import com.bastionsecurity.sidecheck.data.DeviceMode
 import com.bastionsecurity.sidecheck.engine.model.Grade
 import com.bastionsecurity.sidecheck.engine.model.Severity
 
@@ -52,7 +54,7 @@ object SC {
 }
 
 // Sizes chosen for reading from ~3 m away on a 1080p TV (Compose TV renders at 960x540 dp).
-private val typography = Typography(
+private val tvTypography = Typography(
     displaySmall = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp),
     headlineMedium = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold, lineHeight = 32.sp),
     headlineSmall = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp),
@@ -65,23 +67,39 @@ private val typography = Typography(
     labelMedium = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
 )
 
+// Phones are held at arm's length: closer to standard Material sizes.
+private val phoneTypography = Typography(
+    displaySmall = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp),
+    headlineMedium = TextStyle(fontSize = 21.sp, fontWeight = FontWeight.SemiBold, lineHeight = 27.sp),
+    headlineSmall = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, lineHeight = 24.sp),
+    titleLarge = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold, lineHeight = 23.sp),
+    titleMedium = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
+    bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 17.sp),
+    labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+    labelMedium = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+)
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun SideCheckTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = SC.Brand,
-            onPrimary = Color(0xFF04150F),
-            background = SC.Bg,
-            onBackground = SC.Text,
-            surface = SC.Surface,
-            onSurface = SC.Text,
-            surfaceVariant = SC.SurfaceHigh,
-            onSurfaceVariant = SC.TextDim,
-            border = SC.Outline,
-            error = SC.Danger,
-        ),
-        typography = typography,
-        content = content,
-    )
+fun SideCheckTheme(mode: DeviceMode = DeviceMode.TV, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalDeviceMode provides mode) {
+        MaterialTheme(
+            colorScheme = darkColorScheme(
+                primary = SC.Brand,
+                onPrimary = Color(0xFF04150F),
+                background = SC.Bg,
+                onBackground = SC.Text,
+                surface = SC.Surface,
+                onSurface = SC.Text,
+                surfaceVariant = SC.SurfaceHigh,
+                onSurfaceVariant = SC.TextDim,
+                border = SC.Outline,
+                error = SC.Danger,
+            ),
+            typography = if (mode == DeviceMode.MOBILE) phoneTypography else tvTypography,
+            content = content,
+        )
+    }
 }

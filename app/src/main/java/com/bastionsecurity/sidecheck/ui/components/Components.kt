@@ -5,9 +5,12 @@ import android.util.LruCache
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,6 +49,8 @@ import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.bastionsecurity.sidecheck.engine.model.Grade
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
+import com.bastionsecurity.sidecheck.ui.theme.tapToClick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -60,9 +65,11 @@ fun FocusCard(
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.tapToClick(true, interaction, onClick),
+        interactionSource = interaction,
         shape = ClickableSurfaceDefaults.shape(CardShape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = container,
@@ -74,7 +81,8 @@ fun FocusCard(
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(BorderStroke(3.dp, SC.Brand), shape = CardShape),
         ),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
+        // Zooming is a TV focus cue; on touch screens it just makes cards jump.
+        scale = ClickableSurfaceDefaults.scale(focusedScale = if (isPhone()) 1f else 1.02f),
     ) {
         Column(Modifier.padding(contentPadding), content = content)
     }
@@ -88,15 +96,20 @@ fun Panel(modifier: Modifier = Modifier, container: Color = SC.Surface, content:
         shape = CardShape,
         colors = SurfaceDefaults.colors(containerColor = container, contentColor = SC.Text),
     ) {
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp), content = content)
+        Column(
+            Modifier.padding(if (isPhone()) PaddingValues(16.dp) else PaddingValues(horizontal = 24.dp, vertical = 20.dp)),
+            content = content,
+        )
     }
 }
 
 @Composable
 fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val interaction = remember { MutableInteractionSource() }
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.tapToClick(enabled, interaction, onClick),
+        interactionSource = interaction,
         enabled = enabled,
         colors = ButtonDefaults.colors(
             containerColor = SC.Brand,
@@ -104,7 +117,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             focusedContainerColor = Color(0xFF6FE0B4),
             focusedContentColor = Color(0xFF04150F),
         ),
-        contentPadding = PaddingValues(horizontal = 26.dp, vertical = 12.dp),
+        contentPadding = if (isPhone()) PaddingValues(horizontal = 20.dp, vertical = 10.dp) else PaddingValues(horizontal = 26.dp, vertical = 12.dp),
     ) { Text(text, style = MaterialTheme.typography.titleMedium) }
 }
 
@@ -117,9 +130,11 @@ fun SecondaryButton(
     enabled: Boolean = true,
 ) {
     val accent = if (danger) SC.Danger else SC.Text
+    val interaction = remember { MutableInteractionSource() }
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.tapToClick(enabled, interaction, onClick),
+        interactionSource = interaction,
         enabled = enabled,
         colors = OutlinedButtonDefaults.colors(
             containerColor = Color.Transparent,
@@ -130,7 +145,7 @@ fun SecondaryButton(
         border = OutlinedButtonDefaults.border(
             border = Border(BorderStroke(2.dp, if (danger) SC.Danger.copy(alpha = 0.7f) else SC.Outline)),
         ),
-        contentPadding = PaddingValues(horizontal = 22.dp, vertical = 10.dp),
+        contentPadding = if (isPhone()) PaddingValues(horizontal = 16.dp, vertical = 8.dp) else PaddingValues(horizontal = 22.dp, vertical = 10.dp),
     ) { Text(text, style = MaterialTheme.typography.labelLarge) }
 }
 
@@ -163,9 +178,21 @@ fun Pill(text: String, color: Color, modifier: Modifier = Modifier) {
     ) { Text(text, color = color, style = MaterialTheme.typography.labelMedium) }
 }
 
+/** A row of buttons. On a phone they wrap onto the next line instead of running off the screen. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ButtonRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically, content = content)
+    if (isPhone()) {
+        FlowRow(
+            modifier,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+    } else {
+        Row(modifier, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically, content = content)
+    }
 }
 
 private object IconCache {

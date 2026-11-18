@@ -5,7 +5,9 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +55,11 @@ import com.bastionsecurity.sidecheck.ui.components.FocusCard
 import com.bastionsecurity.sidecheck.ui.components.Panel
 import com.bastionsecurity.sidecheck.ui.components.PrimaryButton
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.deviceNoun
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
+import com.bastionsecurity.sidecheck.ui.theme.screenPadding
+import com.bastionsecurity.sidecheck.ui.theme.tvWidth
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -92,6 +101,7 @@ fun HomeScreen(
     onOpenApp: (String) -> Unit,
     onOpenFirmware: () -> Unit,
     onCheckApp: () -> Unit,
+    onSwitchDevice: () -> Unit,
 ) {
     val state by vm.scanState.collectAsStateWithLifecycle()
     val hasResults by vm.hasResults.collectAsStateWithLifecycle()
@@ -108,101 +118,151 @@ fun HomeScreen(
         if (state is ScanState.Scanning) wasScanning = true
         else if (wasScanning && state is ScanState.Idle) { wasScanning = false; onOpenResults() }
     }
-    LaunchedEffect(Unit) { runCatching { scanFocus.requestFocus() } }
+    val phone = isPhone()
+    LaunchedEffect(Unit) { scanFocus.focusFirst(phone) }
 
-    Row(
-        Modifier.fillMaxSize().background(SC.Bg).padding(horizontal = 56.dp, vertical = 40.dp),
-        horizontalArrangement = Arrangement.spacedBy(40.dp),
-    ) {
-        Column(Modifier.weight(1.25f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
-            Text("SideCheck", style = MaterialTheme.typography.displaySmall, color = SC.Text)
-            Text("by Bastion Security", style = MaterialTheme.typography.bodyMedium, color = SC.Brand)
-            // The tagline makes room for the firmware warning when there is one.
-            if (firmwareCount == 0) {
-                Spacer(Modifier.height(20.dp))
+    val noun = deviceNoun()
+
+    // Low-key way to change the first-launch answer. On TV it sits under the summary (reached with
+    // Down), so pressing Right from the scan button can't land on it by accident.
+    val switchCard: @Composable () -> Unit = {
+        FocusCard(onClick = onSwitchDevice, modifier = Modifier.tvWidth(460.dp), container = SC.Bg) {
+            Text(if (phone) "Using a TV?" else "Using a phone or tablet?", style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (phone) "Switch to the TV layout" else "Switch to the phone and tablet layout",
+                style = MaterialTheme.typography.bodySmall,
+                color = SC.TextDim,
+            )
+        }
+    }
+
+    // Title, scan button and summary.
+    val main: @Composable ColumnScope.() -> Unit = {
+        Text("SideCheck", style = MaterialTheme.typography.displaySmall, color = SC.Text)
+        Text("by Bastion Security", style = MaterialTheme.typography.bodyMedium, color = SC.Brand)
+        // The tagline makes room for the firmware warning when there is one.
+        if (firmwareCount == 0) {
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "See what the apps on this $noun can really do. You decide what stays.",
+                style = MaterialTheme.typography.headlineSmall,
+                color = SC.TextDim,
+            )
+        }
+        Spacer(Modifier.height(28.dp))
+
+        when (val s = state) {
+            is ScanState.Scanning -> ScanProgress(s)
+            else -> PrimaryButton(
+                if (hasResults) "Scan again" else "Scan my apps",
+                onClick = vm::scan,
+                modifier = Modifier.focusRequester(scanFocus),
+            )
+        }
+        if (state is ScanState.Failed) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "The scan stopped early: ${(state as ScanState.Failed).message}. Try again.",
+                color = SC.Danger,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Spacer(Modifier.height(28.dp))
+        if (firmwareCount > 0) {
+            FocusCard(onClick = onOpenFirmware, modifier = Modifier.tvWidth(560.dp), container = SC.Danger.copy(alpha = 0.22f)) {
+                Text(if (phone) "This device's built-in software matches known malware" else "Your TV box's built-in software matches known malware", style = MaterialTheme.typography.titleLarge, color = SC.Text)
                 Text(
-                    "See what the apps on this TV can really do. You decide what stays.",
-                    style = MaterialTheme.typography.headlineSmall,
+                    "$firmwareCount built-in app${if (firmwareCount == 1) "" else "s"} matched. ${if (phone) "Tap" else "Select"} to see what you can do.",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = SC.TextDim,
                 )
             }
-            Spacer(Modifier.height(28.dp))
-
-            when (val s = state) {
-                is ScanState.Scanning -> ScanProgress(s)
-                else -> PrimaryButton(
-                    if (hasResults) "Scan again" else "Scan my apps",
-                    onClick = vm::scan,
-                    modifier = Modifier.focusRequester(scanFocus),
-                )
-            }
-            if (state is ScanState.Failed) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "The scan stopped early: ${(state as ScanState.Failed).message}. Try again.",
-                    color = SC.Danger,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Spacer(Modifier.height(28.dp))
-            if (firmwareCount > 0) {
-                FocusCard(onClick = onOpenFirmware, modifier = Modifier.width(560.dp), container = SC.Danger.copy(alpha = 0.22f)) {
-                    Text("Your TV box's built-in software matches known malware", style = MaterialTheme.typography.titleLarge, color = SC.Text)
-                    Text(
-                        "$firmwareCount built-in app${if (firmwareCount == 1) "" else "s"} matched. Select to see what you can do.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SC.TextDim,
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
-            }
-            Summary(hasResults, entries, last, savedAttention)
+            Spacer(Modifier.height(16.dp))
         }
+        Summary(hasResults, entries, last, savedAttention)
+        if (!phone) {
+            Spacer(Modifier.height(12.dp))
+            switchCard()
+        }
+    }
 
-        Column(
-            Modifier.weight(1f).fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        ) {
-            if (recent.isNotEmpty()) {
-                Text("New since you last looked", style = MaterialTheme.typography.titleMedium, color = SC.Brand)
-                recent.take(2).forEach { item ->
-                    FocusCard(
-                        onClick = { onOpenApp(item.packageName) },
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                            AppIcon(item.packageName, 40.dp)
-                            Column(Modifier.weight(1f)) {
-                                Text(item.label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                                Text(if (item.isNew) "Just installed" else "Just updated", style = MaterialTheme.typography.bodySmall, color = SC.TextDim)
-                            }
-                            item.grade?.let { GradeBadge(it, 34.dp) }
+    // "New since you last looked" and the navigation cards.
+    val side: @Composable ColumnScope.() -> Unit = {
+        if (recent.isNotEmpty()) {
+            Text("New since you last looked", style = MaterialTheme.typography.titleMedium, color = SC.Brand)
+            recent.take(2).forEach { item ->
+                FocusCard(
+                    onClick = { onOpenApp(item.packageName) },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        AppIcon(item.packageName, 40.dp)
+                        Column(Modifier.weight(1f)) {
+                            Text(item.label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                            Text(if (item.isNew) "Just installed" else "Just updated", style = MaterialTheme.typography.bodySmall, color = SC.TextDim)
                         }
+                        item.grade?.let { GradeBadge(it, 34.dp) }
                     }
                 }
-                if (recent.size > 2) {
-                    Text("and ${recent.size - 2} more in your results", style = MaterialTheme.typography.bodySmall, color = SC.TextFaint)
+            }
+            if (recent.size > 2) {
+                Text("and ${recent.size - 2} more in your results", style = MaterialTheme.typography.bodySmall, color = SC.TextFaint)
+            }
+        }
+        if (hasResults) {
+            val attention = entries.count { it.needsAttention }
+            FocusCard(onClick = onOpenResults, modifier = Modifier.fillMaxWidth()) {
+                Text("See results", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    if (attention == 0) "${entries.size} apps checked" else "$attention need your attention",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (attention == 0) SC.TextDim else SC.grade(com.bastionsecurity.sidecheck.engine.model.Grade.C),
+                )
+            }
+        }
+        FocusCard(onClick = onCheckApp, modifier = Modifier.fillMaxWidth()) {
+            Text("Check an app", style = MaterialTheme.typography.titleLarge)
+            Text("Pick one app from your list", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
+        }
+        FocusCard(onClick = onOpenTrusted, modifier = Modifier.fillMaxWidth()) {
+            Text("Trusted apps", style = MaterialTheme.typography.titleLarge)
+            Text("Apps you chose to keep", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
+        }
+        if (phone) switchCard()
+    }
+
+    if (phone) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(SC.Bg)) {
+            if (maxWidth >= 720.dp) {
+                // Landscape phone or tablet: two columns, each scrolling on its own.
+                Row(Modifier.fillMaxSize().padding(screenPadding()), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = main)
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp), content = side)
+                }
+            } else {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(screenPadding())) {
+                    main()
+                    Spacer(Modifier.height(24.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp), content = side)
                 }
             }
-            if (hasResults) {
-                val attention = entries.count { it.needsAttention }
-                FocusCard(onClick = onOpenResults, modifier = Modifier.fillMaxWidth()) {
-                    Text("See results", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        if (attention == 0) "${entries.size} apps checked" else "$attention need your attention",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (attention == 0) SC.TextDim else SC.grade(com.bastionsecurity.sidecheck.engine.model.Grade.C),
-                    )
-                }
+        }
+    } else {
+        Row(
+            Modifier.fillMaxSize().background(SC.Bg).padding(horizontal = 56.dp, vertical = 40.dp),
+            horizontalArrangement = Arrangement.spacedBy(40.dp),
+        ) {
+            Box(Modifier.weight(1.25f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), content = main)
             }
-            FocusCard(onClick = onCheckApp, modifier = Modifier.fillMaxWidth()) {
-                Text("Check an app", style = MaterialTheme.typography.titleLarge)
-                Text("Pick one app from your list", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
-            }
-            FocusCard(onClick = onOpenTrusted, modifier = Modifier.fillMaxWidth()) {
-                Text("Trusted apps", style = MaterialTheme.typography.titleLarge)
-                Text("Apps you chose to keep", style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
+            // Centered when it fits; scrolls (following D-pad focus) when it doesn't.
+            Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Column(
+                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    content = side,
+                )
             }
         }
     }
@@ -211,7 +271,7 @@ fun HomeScreen(
 @Composable
 private fun ScanProgress(s: ScanState.Scanning) {
     val frac = if (s.total == 0) 0f else s.done.toFloat() / s.total
-    Column(Modifier.width(420.dp)) {
+    Column(Modifier.tvWidth(420.dp)) {
         Text(
             if (s.total == 0) "Getting ready…" else "Checking ${s.currentLabel ?: "apps"}…",
             style = MaterialTheme.typography.titleLarge,
@@ -239,7 +299,7 @@ private fun Summary(hasResults: Boolean, entries: List<AppEntry>, last: LastScan
         Text("You haven't scanned yet.", style = MaterialTheme.typography.bodyLarge, color = SC.TextFaint)
         return
     }
-    Panel(Modifier.width(460.dp)) {
+    Panel(Modifier.tvWidth(460.dp)) {
         Text(
             "Last scan " + DateUtils.getRelativeTimeSpanString(time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS),
             style = MaterialTheme.typography.bodyMedium,

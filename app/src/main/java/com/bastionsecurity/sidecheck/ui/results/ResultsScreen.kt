@@ -1,6 +1,9 @@
 package com.bastionsecurity.sidecheck.ui.results
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +46,12 @@ import com.bastionsecurity.sidecheck.ui.components.GradeBadge
 import com.bastionsecurity.sidecheck.ui.components.Pill
 import com.bastionsecurity.sidecheck.ui.components.PrimaryButton
 import com.bastionsecurity.sidecheck.ui.theme.SC
+import com.bastionsecurity.sidecheck.ui.theme.tapToClick
+import com.bastionsecurity.sidecheck.ui.theme.listScreenPadding
+import com.bastionsecurity.sidecheck.ui.theme.tvWidth
+import com.bastionsecurity.sidecheck.ui.theme.deviceNoun
+import com.bastionsecurity.sidecheck.ui.theme.focusFirst
+import com.bastionsecurity.sidecheck.ui.theme.isPhone
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -69,29 +78,40 @@ fun ResultsScreen(vm: ResultsViewModel, initialFilter: ResultsFilter, onOpenApp:
         ResultsFilter.TRUSTED -> entries.filter { it.trusted }
     }
 
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    val phone = isPhone()
+    LaunchedEffect(Unit) { firstFocus.focusFirst(phone) }
 
-    Column(Modifier.fillMaxSize().background(SC.Bg).padding(start = 56.dp, end = 56.dp, top = 32.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Your apps", style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f))
-            Text(
-                "${entries.count { it.needsAttention }} need attention · ${entries.size} checked",
-                style = MaterialTheme.typography.bodyLarge,
-                color = SC.TextDim,
-            )
+    val counts = "${entries.count { it.needsAttention }} need attention · ${entries.size} checked"
+    Column(Modifier.fillMaxSize().background(SC.Bg).padding(listScreenPadding())) {
+        if (phone) {
+            Text("Your apps", style = MaterialTheme.typography.displaySmall)
+            Text(counts, style = MaterialTheme.typography.bodyMedium, color = SC.TextDim)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Your apps", style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f))
+                Text(counts, style = MaterialTheme.typography.bodyLarge, color = SC.TextDim)
+            }
         }
         Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // On phones the chips scroll sideways instead of running off the screen. Not on TV: a scrolling
+        // row clips the focused chip's zoom and outline.
+        Row(
+            if (phone) Modifier.horizontalScroll(rememberScrollState()) else Modifier,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             ResultsFilter.entries.forEach { f ->
                 val count = when (f) {
                     ResultsFilter.ALL -> entries.size
                     ResultsFilter.ATTENTION -> entries.count { it.needsAttention }
                     ResultsFilter.TRUSTED -> entries.count { it.trusted }
                 }
+                val interaction = remember { MutableInteractionSource() }
                 FilterChip(
                     selected = filter == f,
                     onClick = { filter = f },
-                    modifier = if (f == initialFilter) Modifier.focusRequester(firstFocus) else Modifier,
+                    modifier = (if (f == initialFilter) Modifier.focusRequester(firstFocus) else Modifier)
+                        .tapToClick(true, interaction) { filter = f },
+                    interactionSource = interaction,
                     colors = FilterChipDefaults.colors(
                         containerColor = SC.Surface,
                         contentColor = SC.TextDim,
@@ -112,7 +132,7 @@ fun ResultsScreen(vm: ResultsViewModel, initialFilter: ResultsFilter, onOpenApp:
             shown.isEmpty() -> when (filter) {
                 ResultsFilter.ATTENTION -> Empty("Nothing needs your attention", "Every app either looks fine or is one you chose to keep.", null) {}
                 ResultsFilter.TRUSTED -> Empty("No trusted apps yet", "Open an app and choose Keep to trust it. We'll stop flagging it.", null) {}
-                ResultsFilter.ALL -> Empty("No apps to check", "There are no apps added to this TV besides the built-in ones.", null) {}
+                ResultsFilter.ALL -> Empty("No apps to check", "There are no apps added to this ${deviceNoun()} besides the built-in ones.", null) {}
             }
             else -> LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -138,7 +158,7 @@ private fun AppRow(e: AppEntry, onClick: () -> Unit) {
                     e.report.verdict,
                     style = MaterialTheme.typography.bodyMedium,
                     color = SC.TextDim,
-                    maxLines = 1,
+                    maxLines = if (isPhone()) 2 else 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -150,7 +170,7 @@ private fun AppRow(e: AppEntry, onClick: () -> Unit) {
 @Composable
 private fun Empty(title: String, body: String, action: String?, onAction: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(520.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.tvWidth(520.dp)) {
             Text(title, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(body, style = MaterialTheme.typography.bodyLarge, color = SC.TextDim)

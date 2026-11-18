@@ -1,5 +1,6 @@
 package com.bastionsecurity.sidecheck.ui.apk
 
+import com.bastionsecurity.sidecheck.data.DeviceModeStore
 import androidx.core.content.pm.PackageInfoCompat
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -49,6 +50,9 @@ sealed interface ApkCheckState {
 class ApkCheckViewModel(private val c: AppContainer) : ViewModel() {
     private val staging = ApkStaging(c.app)
     private val handoff = InstallHandoff(c.app)
+
+    /** "TV" or "device", for messages. */
+    private val noun get() = DeviceModeStore.noun(c.app)
 
     private val _state = MutableStateFlow<ApkCheckState>(ApkCheckState.NoFile)
     val state: StateFlow<ApkCheckState> = _state.asStateFlow()
@@ -107,7 +111,7 @@ class ApkCheckViewModel(private val c: AppContainer) : ViewModel() {
         }
         val intent = handoff.installIntent(s.file)
         if (intent == null) {
-            _state.value = ApkCheckState.Failed("No installer found", "This TV doesn't have Android's app installer available.")
+            _state.value = ApkCheckState.Failed("No installer found", "This $noun doesn't have Android's app installer available.")
             return
         }
         handedOffAt = System.currentTimeMillis()
@@ -159,10 +163,10 @@ class ApkCheckViewModel(private val c: AppContainer) : ViewModel() {
             "We couldn't open that file",
             "The app that sent it didn't let us read it. Try opening the file from a different file manager or from Downloader.",
         )
-        ApkStaging.Reason.TOO_BIG -> ApkCheckState.Failed("This file is too big", "We only check files up to 1 GB to keep your TV running smoothly.")
+        ApkStaging.Reason.TOO_BIG -> ApkCheckState.Failed("This file is too big", "We only check files up to 1 GB to keep your $noun running smoothly.")
         ApkStaging.Reason.NOT_ENOUGH_SPACE -> ApkCheckState.Failed(
             "Not enough free space",
-            "Your TV needs more free storage to check this file. Try removing apps or files you don't use.",
+            "Your $noun needs more free storage to check this file. Try removing apps or files you don't use.",
         )
         ApkStaging.Reason.BUNDLE -> ApkCheckState.Failed(
             "This is an app bundle, not a single app file",
