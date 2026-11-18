@@ -134,7 +134,8 @@ SHA-256** hashes (`engine/src/main/resources/sidecheck/malware_db.json`).
   app's Settings page). System APKs over 128 MB aren't file-hashed (certificate matching still applies).
 - Every entry cites its source. The list is compiled by `tools/malware-db/build_malware_db.py`,
   which only includes sources listed in `tools/malware-db/cleared_sources.txt`.
-  **It ships empty** until a source is cleared for redistribution — see `tools/malware-db/README.md`.
+  It currently ships ESET's Android hashes (BSD-2-Clause, credited in `NOTICE`); the TV botnet
+  families (Vo1d, Kimwolf, …) need permission from their publishers first — see `tools/malware-db/README.md`.
 - No internet: the list updates when a new SideCheck version is published.
 
 ## Permissions SideCheck asks for

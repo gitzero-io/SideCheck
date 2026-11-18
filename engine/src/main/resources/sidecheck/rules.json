@@ -8,8 +8,8 @@
       "action": "REMOVE",
       "gradeCap": "F",
       "title": "This exact app is known malware",
-      "explanation": "{source} found this exact file in {malwareName}, malware that takes over devices like yours.",
-      "why": "This isn't a guess based on what the app could do. This exact file has already been caught doing harm, for example using TV boxes to attack websites or to route other people's internet traffic.",
+      "explanation": "{source} found this exact file in {malwareName}, a known harmful app.",
+      "why": "This isn't a guess based on what the app could do. Security researchers have already caught this exact file doing harm, such as spying on people, stealing money, or taking over TV boxes.",
       "when": {
         "all": [
           "knownMalwareFile"
