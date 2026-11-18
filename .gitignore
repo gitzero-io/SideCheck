@@ -21,3 +21,6 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Private marketing drafts
+marketing/

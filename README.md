@@ -231,3 +231,20 @@ Without `keystore.properties` (e.g. on another machine), release builds come out
 - [ ] Turn on R8 for release (`optimization.enable = true`) and keep the Shizuku rule in
       `app/src/main/keepRules/rules.keep`; test the release build on a box.
 - [ ] Move UI strings to `strings.xml` before translating.
+
+## License
+
+SideCheck is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License, version 3, as published by the Free Software Foundation. See
+[LICENSE](LICENSE).
+
+Copyright (C) 2026 Bastion Security.
+
+Contributions are accepted under the Contributor License Agreement in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Trademarks
+
+The GPL covers the code, not the names. "SideCheck", "Bastion Security", and their logos are
+trademarks of Bastion Security. If you distribute a modified version, give it a different
+name and icon, and don't suggest it comes from or is endorsed by Bastion Security.
