@@ -3,6 +3,7 @@ package com.bastionsecurity.sidecheck
 import android.app.Application
 import com.bastionsecurity.sidecheck.collect.FirmwareCheck
 import com.bastionsecurity.sidecheck.collect.PackageCollector
+import com.bastionsecurity.sidecheck.data.DeviceModeStore
 import com.bastionsecurity.sidecheck.data.ScanRepository
 import com.bastionsecurity.sidecheck.data.TrustStore
 import com.bastionsecurity.sidecheck.data.WatchState
@@ -10,6 +11,7 @@ import com.bastionsecurity.sidecheck.engine.Analyzer
 import com.bastionsecurity.sidecheck.engine.providers.BundledRuleSetProvider
 import com.bastionsecurity.sidecheck.engine.providers.FreeTier
 import com.bastionsecurity.sidecheck.engine.malware.LocalMalwareReputationProvider
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import com.bastionsecurity.sidecheck.engine.providers.RuleBundle
 import com.bastionsecurity.sidecheck.engine.providers.PremiumFeatures
 import com.bastionsecurity.sidecheck.grants.GrantInspector
@@ -55,7 +57,10 @@ class AppContainer(val app: Application) {
 
     val trust = TrustStore(app)
     val watch = WatchState(app)
-    val repository = ScanRepository(app, { collector }, { analyzer }, { firmwareCheck }, trust, watch, appScope)
+    /** TV or phone/tablet rules, from the user's first-launch answer. Read per analysis so a switch applies at once. */
+    fun platform(): Platform = DeviceModeStore.platform(app)
+
+    val repository = ScanRepository(app, { collector }, { analyzer }, ::platform, { firmwareCheck }, trust, watch, appScope)
     val notifier = Notifier(app)
     val backgroundChecker = BackgroundChecker(app, { collector }, repository, trust, watch, notifier)
     val shizuku = ShizukuBridge(app)

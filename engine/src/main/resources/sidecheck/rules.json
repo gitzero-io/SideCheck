@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "rules": [
     {
       "id": "known_malware_file",
@@ -39,7 +39,7 @@
       "action": "REMOVE",
       "title": "Can watch your screen and stop you from removing it",
       "explanation": "{app} can read and control what's on your screen, and it can also make itself a device admin.",
-      "why": "Together, these let an app take over a device: it can tap buttons for you and make itself hard to uninstall. Harmful apps use this pair a lot. Very few honest TV apps need both.",
+      "why": "Together, these let an app take over a device: it can tap buttons for you and make itself hard to uninstall. Harmful apps use this pair a lot. Very few honest apps need both.",
       "when": {
         "all": [
           "accessibility",
@@ -151,6 +151,12 @@
       "title": "Asks for text message access on a TV",
       "explanation": "{app} asks for {permissionList}.",
       "why": "TVs don't send or receive texts. An app asking for this was probably made for phones, or it's trying to grab codes (like login codes) where it can.",
+      "phone": {
+        "severity": "MEDIUM",
+        "action": "REVIEW",
+        "title": "Can read or send your text messages",
+        "why": "Texting apps need this. Other apps can use it to read login codes sent by text, or to send texts that cost you money. Only allow it if this app is meant for texting."
+      },
       "when": {
         "anyPermission": [
           "android.permission.READ_SMS",
@@ -169,6 +175,12 @@
       "title": "Asks for phone call access on a TV",
       "explanation": "{app} asks for {permissionList}.",
       "why": "TVs don't make phone calls. Asking for call access on a TV is a sign the app collects more than it needs.",
+      "phone": {
+        "severity": "MEDIUM",
+        "action": "REVIEW",
+        "title": "Can see your call history or make calls",
+        "why": "Phone, dialer and caller ID apps need this. Other apps rarely do: your call history shows who you talk to, and making calls can cost money."
+      },
       "when": {
         "anyPermission": [
           "android.permission.READ_CALL_LOG",
@@ -306,6 +318,9 @@
       "title": "Asks for your contacts",
       "explanation": "{app} asks for {permissionList}.",
       "why": "Most TV apps don't need your contacts. If this is a video calling app, it may make sense. Otherwise it's collecting more than it needs.",
+      "phone": {
+        "why": "Messaging, calling and social apps often use your contacts. Other apps that ask may be collecting more than they need, and your contacts' details too."
+      },
       "when": {
         "anyPermission": [
           "android.permission.READ_CONTACTS",
@@ -352,6 +367,9 @@
       "title": "Can see your location even when closed",
       "explanation": "{app} asks to know where you are even when you're not using it.",
       "why": "A TV doesn't move, but its location still shows where you live. Few TV apps need this in the background.",
+      "phone": {
+        "why": "This lets the app follow where you go, even when you're not using it. Maps, fitness and family safety apps need it. Most other apps don't."
+      },
       "when": {
         "anyPermission": [
           "android.permission.ACCESS_BACKGROUND_LOCATION"
@@ -466,6 +484,10 @@
       "title": "Can use a camera",
       "explanation": "{app} can ask to use a camera, if one is connected.",
       "why": "Video calling apps need this. Other TV apps usually don't.",
+      "phone": {
+        "explanation": "{app} can ask to use the camera.",
+        "why": "Camera, video calling and scanning apps (for QR codes or documents) need this. Android asks you before the app can use it."
+      },
       "when": {
         "anyPermission": [
           "android.permission.CAMERA"
@@ -480,6 +502,9 @@
       "title": "Can ask for your exact location",
       "explanation": "{app} can ask where you are.",
       "why": "Weather and local news apps use this. On a TV, your location is your home address.",
+      "phone": {
+        "why": "Maps, weather and delivery apps use this. Your exact location shows where you are and where you go."
+      },
       "when": {
         "anyPermission": [
           "android.permission.ACCESS_FINE_LOCATION"

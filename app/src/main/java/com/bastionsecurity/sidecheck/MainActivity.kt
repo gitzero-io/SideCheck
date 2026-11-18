@@ -91,7 +91,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveMode(mode: DeviceMode) {
+        val changed = DeviceModeStore.get(this) != null && DeviceModeStore.get(this) != mode
         DeviceModeStore.set(this, mode)
+        // Grades depend on the mode (e.g. text message access), so results from the other mode are stale.
+        if (changed) (application as SideCheckApp).container.repository.discardResults()
         DeviceModeStore.applyOrientation(this, mode)
     }
 

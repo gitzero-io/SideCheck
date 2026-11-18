@@ -91,7 +91,7 @@ class ApkCheckViewModel(private val c: AppContainer) : ViewModel() {
                             )
                             return@launch
                         }
-                        val report = c.analyzer.analyze(facts)
+                        val report = c.analyzer.analyze(facts, c.platform())
                         _state.value = ApkCheckState.Ready(report, staged.file, staged.displayName, existing(report))
                     } catch (e: Exception) {
                         Log.e(TAG, "APK check failed", e)

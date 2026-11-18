@@ -9,6 +9,7 @@ import com.bastionsecurity.sidecheck.engine.impersonation.ImpersonationCheck
 import com.bastionsecurity.sidecheck.engine.model.AppFacts
 import com.bastionsecurity.sidecheck.engine.model.AppReport
 import com.bastionsecurity.sidecheck.engine.model.Finding
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import com.bastionsecurity.sidecheck.engine.model.ReputationResult
 import com.bastionsecurity.sidecheck.engine.providers.NoOpReputationProvider
 import com.bastionsecurity.sidecheck.engine.providers.ReputationProvider
@@ -38,7 +39,8 @@ class Analyzer(
 
     val unsupportedRules: List<String> get() = engine.unsupportedRules
 
-    suspend fun analyze(facts: AppFacts): AppReport {
+    /** [platform] picks the TV or phone/tablet version of each rule (see `RuleDef.phone`). */
+    suspend fun analyze(facts: AppFacts, platform: Platform = Platform.TV): AppReport {
         val rep: ReputationResult? = try {
             reputation.lookup(facts.apkSha256, facts.packageName, facts.signers.map { it.sha256 })
         } catch (e: CancellationException) {
@@ -46,7 +48,7 @@ class Analyzer(
         } catch (_: Exception) {
             null // A failed lookup must never block or change the local result.
         }
-        val ctx = RuleContext(facts, impersonation.check(facts), bundle.trackers, rep)
+        val ctx = RuleContext(facts, impersonation.check(facts), bundle.trackers, rep, platform)
         val graded = Grader.grade(engine.evaluate(ctx))
         // Worst first; within a severity, combined findings before the parts they include.
         val sorted = graded.findings.sortedWith(

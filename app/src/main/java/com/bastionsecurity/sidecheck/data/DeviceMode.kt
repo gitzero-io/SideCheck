@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import androidx.core.content.edit
+import com.bastionsecurity.sidecheck.engine.model.Platform
 
 /** What the user said they're running SideCheck on. Asked once, on first launch. */
 enum class DeviceMode { TV, MOBILE }
@@ -32,6 +33,10 @@ object DeviceModeStore {
     }
 
     fun current(context: Context): DeviceMode = get(context) ?: detect(context)
+
+    /** Which version of the grading rules to use for this device. */
+    fun platform(context: Context): Platform =
+        if (current(context) == DeviceMode.TV) Platform.TV else Platform.PHONE
 
     /** "TV" or "device", for messages built outside Compose. */
     fun noun(context: Context): String = if (current(context) == DeviceMode.TV) "TV" else "device"

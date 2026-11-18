@@ -20,7 +20,8 @@ class RuleEngine(private val ruleSet: RuleSet) {
         )
 
         val findings = mutableListOf<Finding>()
-        for (rule in ruleSet.rules) {
+        for (baseRule in ruleSet.rules) {
+            val rule = baseRule.on(ctx.platform)
             if (!rule.enabled || rule.id in unsupportedRules) continue
             val w = rule.`when`
 

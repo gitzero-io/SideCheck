@@ -3,6 +3,7 @@ package com.bastionsecurity.sidecheck.engine.rules
 import com.bastionsecurity.sidecheck.engine.impersonation.ImpersonationResult
 import com.bastionsecurity.sidecheck.engine.model.AppFacts
 import com.bastionsecurity.sidecheck.engine.model.ComponentType
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import com.bastionsecurity.sidecheck.engine.model.ReputationResult
 import com.bastionsecurity.sidecheck.engine.trackers.TrackerCatalog
 
@@ -12,6 +13,7 @@ class RuleContext(
     val impersonation: ImpersonationResult,
     val trackers: TrackerCatalog,
     val reputation: ReputationResult?,
+    val platform: Platform = Platform.TV,
 )
 
 /** A matched signal: technical evidence lines plus template parameters. */

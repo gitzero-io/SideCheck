@@ -9,8 +9,10 @@ import com.bastionsecurity.sidecheck.engine.Fixtures.service
 import com.bastionsecurity.sidecheck.engine.model.AppFacts
 import com.bastionsecurity.sidecheck.engine.model.DexScanResult
 import com.bastionsecurity.sidecheck.engine.model.Grade
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import com.bastionsecurity.sidecheck.engine.model.ReputationResult
 import com.bastionsecurity.sidecheck.engine.model.Severity
+import com.bastionsecurity.sidecheck.engine.model.SuggestedAction
 import com.bastionsecurity.sidecheck.engine.providers.ReputationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -84,6 +86,46 @@ class RuleEngineTest {
         assertTrue("sms_on_tv" in ids && "call_log_on_tv" in ids && "contacts_on_tv" in ids)
         assertTrue(r.findings.first { it.id == "sms_on_tv" }.plainExplanation.contains("your text messages"))
         assertEquals(Grade.D, r.grade) // 100 - 20 - 20 - 8 = 52
+    }
+
+    @Test
+    fun `sms and call log are review items on a phone`() {
+        val f = facts(permissions = listOf("${P}READ_SMS", "${P}READ_CALL_LOG", "${P}READ_CONTACTS"))
+        val r = kotlinx.coroutines.runBlocking { analyzer.analyze(f, Platform.PHONE) }
+        val byId = r.findings.associateBy { it.id }
+        // Same ids on both platforms, so Keep choices carry over.
+        assertEquals(setOf("sms_on_tv", "call_log_on_tv", "contacts_on_tv"), byId.keys)
+        assertEquals(Severity.MEDIUM, byId.getValue("sms_on_tv").severity)
+        assertEquals(SuggestedAction.REVIEW, byId.getValue("sms_on_tv").suggestedAction)
+        assertEquals(Severity.MEDIUM, byId.getValue("call_log_on_tv").severity)
+        assertEquals("Can read or send your text messages", byId.getValue("sms_on_tv").plainTitle)
+        assertEquals(Grade.B, r.grade) // 100 - 8 - 8 - 8 = 76
+    }
+
+    @Test
+    fun `no phone finding mentions a TV`() {
+        val all = Signals.DANGEROUS_PERMISSIONS.toList() + listOf(
+            "${P}ACCESS_BACKGROUND_LOCATION", "${P}RECEIVE_BOOT_COMPLETED", "${P}SYSTEM_ALERT_WINDOW",
+        )
+        val f = facts(
+            permissions = all,
+            debuggable = true,
+            components = listOf(service("a.Acc", Signals.BIND_ACCESSIBILITY), receiver("a.Adm", Signals.BIND_DEVICE_ADMIN)),
+        )
+        val r = kotlinx.coroutines.runBlocking { analyzer.analyze(f, Platform.PHONE) }
+        assertTrue(r.findings.size >= 8)
+        for (finding in r.findings) {
+            for (text in listOf(finding.plainTitle, finding.plainExplanation, finding.whyItMatters)) {
+                assertFalse("${finding.id}: $text", Regex("\\bTVs?\\b").containsMatchIn(text))
+            }
+        }
+    }
+
+    @Test
+    fun `rules without a phone block are identical on both platforms`() {
+        for (rule in Fixtures.bundle.rules.rules.filter { it.phone == null }) {
+            assertEquals(rule.id, rule, rule.on(Platform.PHONE))
+        }
     }
 
     @Test

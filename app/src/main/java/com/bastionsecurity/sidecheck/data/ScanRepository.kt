@@ -13,6 +13,7 @@ import com.bastionsecurity.sidecheck.collect.PackageCollector
 import com.bastionsecurity.sidecheck.engine.Analyzer
 import com.bastionsecurity.sidecheck.engine.model.AppReport
 import com.bastionsecurity.sidecheck.engine.model.Grade
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -66,6 +67,7 @@ class ScanRepository(
     private val context: Context,
     private val collector: () -> PackageCollector,
     private val analyzer: () -> Analyzer,
+    private val platform: () -> Platform,
     private val firmware: () -> FirmwareCheck,
     private val trust: TrustStore,
     private val watch: WatchState,
@@ -131,6 +133,7 @@ class ScanRepository(
             try {
                 val c = collector()
                 val a = analyzer()
+                val p = platform()
                 val pkgs = c.userPackages()
                 _state.value = ScanState.Scanning(0, pkgs.size, null)
                 val out = LinkedHashMap<String, AppReport>()
@@ -142,7 +145,7 @@ class ScanRepository(
                     _state.value = ScanState.Scanning(i, pkgs.size, facts?.label ?: pkg)
                     // One bad app must never stop the whole scan.
                     if (facts != null) {
-                        runCatching { a.analyze(facts) }
+                        runCatching { a.analyze(facts, p) }
                             .onSuccess { out[pkg] = it }
                             .onFailure { Log.w(TAG, "Analysis failed for $pkg", it) }
                     }
@@ -180,7 +183,7 @@ class ScanRepository(
         }
         try {
             val facts = collector().collectInstalled(pkg) ?: return@withContext Rescan.Failed(IllegalStateException("Couldn't read $pkg"))
-            val r = analyzer().analyze(facts)
+            val r = analyzer().analyze(facts, platform())
             _reports.update { it + (pkg to r) }
             Rescan.Ok(r)
         } catch (e: Exception) {
@@ -197,6 +200,15 @@ class ScanRepository(
         true
     } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
         false
+    }
+
+    /**
+     * Drop this session's reports, e.g. after switching between TV and phone grading, so stale
+     * grades aren't shown. The saved summary on Home stays until the next scan.
+     */
+    fun discardResults() {
+        _reports.value = emptyMap()
+        _hasResults.value = false
     }
 
     suspend fun remove(pkg: String) {

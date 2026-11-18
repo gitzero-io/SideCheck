@@ -2,6 +2,7 @@ package com.bastionsecurity.sidecheck.engine.rules
 
 import com.bastionsecurity.sidecheck.engine.model.Category
 import com.bastionsecurity.sidecheck.engine.model.Grade
+import com.bastionsecurity.sidecheck.engine.model.Platform
 import com.bastionsecurity.sidecheck.engine.model.Severity
 import com.bastionsecurity.sidecheck.engine.model.SuggestedAction
 import kotlinx.serialization.Serializable
@@ -39,6 +40,35 @@ data class RuleDef(
     val enabled: Boolean = true,
     /** Grade can be no better than this when the rule fires (e.g. "F" for known malware). */
     val gradeCap: Grade? = null,
+    /**
+     * Changes for phones and tablets. The fields above are written for TVs; anything set here
+     * replaces them when grading for [Platform.PHONE]. Older app builds ignore this block.
+     */
+    val phone: RuleVariant? = null,
+) {
+    /** This rule as it applies on [platform]. */
+    fun on(platform: Platform): RuleDef = when {
+        platform != Platform.PHONE || phone == null -> this
+        else -> copy(
+            severity = phone.severity ?: severity,
+            action = phone.action ?: action,
+            title = phone.title ?: title,
+            explanation = phone.explanation ?: explanation,
+            why = phone.why ?: why,
+            enabled = phone.enabled ?: enabled,
+        )
+    }
+}
+
+/** Per-platform overrides for a [RuleDef]. Unset fields keep the base rule's value. */
+@Serializable
+data class RuleVariant(
+    val severity: Severity? = null,
+    val action: SuggestedAction? = null,
+    val title: String? = null,
+    val explanation: String? = null,
+    val why: String? = null,
+    val enabled: Boolean? = null,
 )
 
 @Serializable
