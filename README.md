@@ -216,23 +216,6 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 
 Without `keystore.properties` (e.g. on another machine), release builds come out unsigned.
 
-## TODO before shipping
-
-- [ ] **Developer verification.** Google is rolling out developer verification for apps installed on
-      certified Android devices, including sideloaded ones; the US is expected to follow in 2027.
-      Verify the Bastion Security developer account and register `com.bastionsecurity.sidecheck`
-      so SideCheck itself installs without friction.
-- [x] **Release signing.** Set up (see "Release signing" below). **Back up the keystore and its
-      password in two places** — losing either means existing installs can never be updated.
-- [ ] **Verified certificate hashes** in `known_apps.json` → `signingCertSha256`. Only from APKs you
-      trust (e.g. installed from Google Play), via `apksigner verify --print-certs`. Never guess.
-- [ ] **Fill the known-malware list**: clear at least one source (e.g. ask Nokia Deepfield for
-      permission, or confirm abuse.ch MalwareBazaar's terms), then run the build script.
-- [ ] Replace the bundled tracker list with the Exodus Privacy list (check its license terms).
-- [ ] Turn on R8 for release (`optimization.enable = true`) and keep the Shizuku rule in
-      `app/src/main/keepRules/rules.keep`; test the release build on a box.
-- [ ] Move UI strings to `strings.xml` before translating.
-
 ## License
 
 SideCheck is free software: you can redistribute it and/or modify it under the terms of the
