@@ -91,7 +91,7 @@
       "category": "DEVICE_CONTROL",
       "action": "CONSIDER_REMOVING",
       "title": "Can read your screen, draw over it, and start by itself",
-      "explanation": "{app} can read what's on your screen, show things on top of other apps, and start on its own when the TV turns on.",
+      "explanation": "{app} can read what's on your screen, show things on top of other apps, and start on its own when the device turns on.",
       "why": "This mix lets an app watch what you do and show fake screens over real ones, all without you opening it. Banking and password-stealing apps often use this exact combination.",
       "when": {
         "all": [
@@ -552,7 +552,7 @@
       "action": "NONE",
       "title": "Built in test mode",
       "explanation": "{app} was built with testing turned on.",
-      "why": "Test builds let anyone with a computer connected to the TV look inside the app and its saved data. It's a sign the app wasn't prepared for normal release.",
+      "why": "Test builds let anyone with a computer connected to the device look inside the app and its saved data. It's a sign the app wasn't prepared for normal release.",
       "when": {
         "all": [
           "debuggable"
@@ -694,7 +694,7 @@
       "severity": "INFO",
       "category": "DEVICE_CONTROL",
       "action": "NONE",
-      "title": "Starts when your TV turns on",
+      "title": "Starts when your device turns on",
       "explanation": "{app} can start itself when the device boots.",
       "why": "Launchers, alarm apps, and background tools need this. It also means the app runs even if you never open it.",
       "when": {
@@ -751,7 +751,7 @@
       "category": "CODE",
       "action": "NONE",
       "title": "We could only check part of this app",
-      "explanation": "{app} is very large, so we stopped early to keep your TV running smoothly.",
+      "explanation": "{app} is very large, so we stopped early to keep your device running smoothly.",
       "why": "Some code wasn't checked, so there may be things we didn't see.",
       "when": {
         "all": [
